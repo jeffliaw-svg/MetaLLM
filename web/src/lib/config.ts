@@ -18,8 +18,8 @@ export const MODEL_MAP: Record<Engine, Record<Speed, string>> = {
   },
   gemini: {
     fast: "gemini-2.0-flash",
-    moderate: "gemini-2.0-pro",
-    research: "gemini-2.0-pro",
+    moderate: "gemini-2.5-pro",
+    research: "gemini-2.5-pro",
   },
   chatgpt: {
     fast: "gpt-4o-mini",

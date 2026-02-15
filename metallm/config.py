@@ -50,8 +50,8 @@ MODEL_MAP: dict[Engine, dict[Speed, str]] = {
     },
     Engine.GEMINI: {
         Speed.FAST: "gemini-2.0-flash",
-        Speed.MODERATE: "gemini-2.0-pro",
-        Speed.RESEARCH: "gemini-2.0-pro",  # with thinking budget
+        Speed.MODERATE: "gemini-2.5-pro",
+        Speed.RESEARCH: "gemini-2.5-pro",  # with thinking budget
     },
     Engine.CHATGPT: {
         Speed.FAST: "gpt-4o-mini",
