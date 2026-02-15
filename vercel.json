@@ -1,0 +1,11 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd web && npm install",
+  "buildCommand": "cd web && npm run build",
+  "outputDirectory": "web/.next",
+  "functions": {
+    "web/src/app/api/**/*.ts": {
+      "maxDuration": 120
+    }
+  }
+}
