@@ -395,18 +395,19 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
 
   return (
     <>
-      {/* Individual responses */}
-      <div className="mb-2">
-        <SectionLabel>Responses</SectionLabel>
-      </div>
-      {result.responses.map((r, i) => (
-        <ResponseCard
-          key={r.engine}
-          response={r}
-          label={RESPONSE_LABELS[i]}
-          labelColor={LABEL_COLORS[i]}
-        />
-      ))}
+      {/* Synthesis first */}
+      {arb.synthesis && (
+        <>
+          <div className="mb-2">
+            <SectionLabel>Synthesised Answer</SectionLabel>
+          </div>
+          <div className="glass p-6 mb-4" style={{ borderColor: "var(--accent-purple)" }}>
+            <div className="prose-response text-sm leading-relaxed">
+              <ReactMarkdown>{arb.synthesis}</ReactMarkdown>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Verdict */}
       <div className="mt-8 mb-2">
@@ -483,19 +484,18 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
         </>
       )}
 
-      {/* Synthesis */}
-      {arb.synthesis && (
-        <>
-          <div className="mt-8 mb-2">
-            <SectionLabel>Synthesised Answer</SectionLabel>
-          </div>
-          <div className="glass p-6 mb-4" style={{ borderColor: "var(--accent-purple)" }}>
-            <div className="prose-response text-sm leading-relaxed">
-              <ReactMarkdown>{arb.synthesis}</ReactMarkdown>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Individual responses last */}
+      <div className="mt-8 mb-2">
+        <SectionLabel>Individual Responses</SectionLabel>
+      </div>
+      {result.responses.map((r, i) => (
+        <ResponseCard
+          key={r.engine}
+          response={r}
+          label={RESPONSE_LABELS[i]}
+          labelColor={LABEL_COLORS[i]}
+        />
+      ))}
     </>
   );
 }
