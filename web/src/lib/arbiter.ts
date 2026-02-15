@@ -1,0 +1,91 @@
+/** Arbiter — sends all responses to a chosen engine for evaluation. */
+
+import type { Engine } from "./config";
+import { getQueryFn, type ProviderResponse } from "./providers";
+
+const LABELS = ["A", "B", "C"] as const;
+
+const ARBITER_SYSTEM = `You are an impartial arbiter. You will receive three responses to the same user query, labelled A, B, and C. You do NOT know which AI produced which response — evaluate them purely on merit.
+
+Return your analysis as JSON with exactly these keys:
+{
+  "best": "A" | "B" | "C",
+  "best_rationale": "Why this response is best (2-3 sentences).",
+  "consensus": ["Point of agreement 1", "Point of agreement 2"],
+  "disagreements": [
+    {
+      "topic": "Short description of the area of disagreement",
+      "positions": {"A": "...", "B": "...", "C": "..."},
+      "assessment": "Your view on which position is most likely correct and why."
+    }
+  ],
+  "synthesis": "A final, synthesised answer that incorporates the best elements of all three responses."
+}
+
+Return ONLY valid JSON. No markdown fences, no commentary outside the JSON.`;
+
+export interface Disagreement {
+  topic: string;
+  positions: Record<string, string>;
+  assessment: string;
+}
+
+export interface ArbiterResult {
+  bestLabel: string;
+  bestEngine: Engine;
+  bestRationale: string;
+  consensus: string[];
+  disagreements: Disagreement[];
+  synthesis: string;
+}
+
+function buildArbiterPrompt(
+  prompt: string,
+  responses: ProviderResponse[]
+): string {
+  const sections = [`## Original query\n\n${prompt}\n`];
+  responses.forEach((r, i) => {
+    sections.push(`## Response ${LABELS[i]}\n\n${r.text}\n`);
+  });
+  return sections.join("\n");
+}
+
+export async function arbitrate(
+  prompt: string,
+  responses: ProviderResponse[],
+  arbiterEngine: Engine
+): Promise<ArbiterResult> {
+  const queryFn = getQueryFn(arbiterEngine);
+  const fullPrompt = `${ARBITER_SYSTEM}\n\n---\n\n${buildArbiterPrompt(prompt, responses)}`;
+
+  // Arbiter always runs at research speed + research length.
+  const arbiterResponse = await queryFn(fullPrompt, "research", "research");
+
+  // Parse JSON from the response — strip markdown fences if present.
+  let jsonText = arbiterResponse.text.trim();
+  if (jsonText.startsWith("```")) {
+    jsonText = jsonText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+  }
+  const data = JSON.parse(jsonText);
+
+  // Map winning label back to the actual engine.
+  const labelToEngine: Record<string, Engine> = {};
+  LABELS.forEach((label, i) => {
+    labelToEngine[label] = responses[i].engine;
+  });
+
+  return {
+    bestLabel: data.best,
+    bestEngine: labelToEngine[data.best],
+    bestRationale: data.best_rationale ?? "",
+    consensus: data.consensus ?? [],
+    disagreements: (data.disagreements ?? []).map(
+      (d: { topic: string; positions: Record<string, string>; assessment: string }) => ({
+        topic: d.topic,
+        positions: d.positions,
+        assessment: d.assessment,
+      })
+    ),
+    synthesis: data.synthesis ?? "",
+  };
+}
