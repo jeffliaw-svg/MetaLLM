@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "metallm"
+version = "0.1.0"
+description = "Multi-AI arbitration system — query Claude, Gemini, and ChatGPT, then arbitrate the best response."
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.39.0",
+    "openai>=1.50.0",
+    "google-generativeai>=0.8.0",
+    "click>=8.1.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+metallm = "metallm.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["metallm*"]
