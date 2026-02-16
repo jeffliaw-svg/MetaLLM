@@ -1,8 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { LENGTH_PRESETS, MODEL_MAP, type Length, type Speed } from "../config";
 import type { ProviderResponse } from "./types";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY ?? "");
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
+
+/** Minimum thinking budget for gemini-2.5-pro (thinking can't be disabled). */
+const THINKING_BUDGET = 128;
 
 export async function queryGemini(
   prompt: string,
@@ -11,20 +14,26 @@ export async function queryGemini(
 ): Promise<ProviderResponse> {
   const modelName = MODEL_MAP.gemini[speed];
   const preset = LENGTH_PRESETS[length];
-
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction: preset.systemInstruction,
-    generationConfig: { maxOutputTokens: preset.maxTokens },
-  });
+  const isThinkingModel = modelName.includes("2.5");
 
   const t0 = performance.now();
-  const result = await model.generateContent(prompt);
+  const result = await ai.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: {
+      maxOutputTokens: isThinkingModel
+        ? preset.maxTokens + THINKING_BUDGET
+        : preset.maxTokens,
+      systemInstruction: preset.systemInstruction,
+      ...(isThinkingModel && {
+        thinkingConfig: { thinkingBudget: THINKING_BUDGET },
+      }),
+    },
+  });
   const latency = (performance.now() - t0) / 1000;
 
-  const response = result.response;
-  const text = response.text();
-  const usage = response.usageMetadata;
+  const text = result.text ?? "";
+  const usage = result.usageMetadata;
 
   return {
     engine: "gemini",
