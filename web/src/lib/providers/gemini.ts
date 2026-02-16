@@ -23,7 +23,17 @@ export async function queryGemini(
   const latency = (performance.now() - t0) / 1000;
 
   const response = result.response;
-  const text = response.text();
+
+  // gemini-2.5-pro has thinking enabled by default.  The response parts
+  // include { thought: true, text: "…" } entries alongside the real answer.
+  // response.text() in SDK v0.21 doesn't filter these, so we extract
+  // non-thought text parts manually.
+  const parts: any[] = response.candidates?.[0]?.content?.parts ?? [];
+  const text = parts
+    .filter((p) => typeof p.text === "string" && !p.thought)
+    .map((p) => p.text)
+    .join("");
+
   const usage = response.usageMetadata;
 
   return {
