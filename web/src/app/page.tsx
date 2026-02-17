@@ -52,13 +52,13 @@ type QueryResult = SingleResult | BakeoffResult;
 /* ── Constants ──────────────────────────────────────────────────────── */
 
 const ENGINE_META: Record<Engine, { label: string; color: string; icon: string }> = {
-  claude: { label: "Claude", color: "#a78bfa", icon: "C" },
-  gemini: { label: "Gemini", color: "#34d399", icon: "G" },
-  chatgpt: { label: "ChatGPT", color: "#f5a623", icon: "O" },
+  claude: { label: "Claude", color: "#af52de", icon: "C" },
+  gemini: { label: "Gemini", color: "#34c759", icon: "G" },
+  chatgpt: { label: "ChatGPT", color: "#ff9f0a", icon: "O" },
 };
 
 const RESPONSE_LABELS = ["A", "B", "C"];
-const LABEL_COLORS = ["#4f7df5", "#34d399", "#f5a623"];
+const LABEL_COLORS = ["#007aff", "#34c759", "#ff9f0a"];
 
 /* ── Page ───────────────────────────────────────────────────────────── */
 
@@ -129,14 +129,15 @@ export default function Home() {
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
                 Mode
               </span>
-              <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              <div className="flex rounded-lg" style={{ background: "var(--bg-input)", padding: "3px" }}>
                 <button
                   type="button"
                   onClick={() => setMode("single")}
-                  className="px-4 py-2 text-sm font-medium"
+                  className="px-4 py-1.5 text-sm font-medium"
                   style={{
                     background: mode === "single" ? "var(--accent-blue)" : "transparent",
                     color: mode === "single" ? "#fff" : "var(--text-secondary)",
+                    borderRadius: "6px",
                   }}
                 >
                   Single Engine
@@ -144,11 +145,11 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setMode("bakeoff")}
-                  className="px-4 py-2 text-sm font-medium"
+                  className="px-4 py-1.5 text-sm font-medium"
                   style={{
                     background: mode === "bakeoff" ? "var(--accent-blue)" : "transparent",
                     color: mode === "bakeoff" ? "#fff" : "var(--text-secondary)",
-                    borderLeft: "1px solid var(--border)",
+                    borderRadius: "6px",
                   }}
                 >
                   Bake-off
@@ -214,7 +215,7 @@ export default function Home() {
                 rows={3}
                 className="w-full rounded-xl px-5 py-4 text-sm leading-relaxed"
                 style={{
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--bg-input)",
                   border: "1px solid var(--border)",
                   color: "var(--text-primary)",
                 }}
@@ -328,7 +329,7 @@ function SettingSelect({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg px-3 py-2.5 text-sm"
         style={{
-          background: "rgba(0,0,0,0.25)",
+          background: "var(--bg-input)",
           border: "1px solid var(--border)",
           color: "var(--text-primary)",
         }}
@@ -368,7 +369,7 @@ function ResponseCard({
         )}
         <span
           className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-          style={{ background: meta.color, color: "#0a0a0f" }}
+          style={{ background: meta.color, color: "#fff" }}
         >
           {meta.icon}
         </span>
@@ -417,7 +418,7 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
         <div className="flex items-center gap-3 mb-3">
           <span
             className="px-3 py-1 rounded-full text-xs font-bold"
-            style={{ background: "var(--accent-green)", color: "#0a0a0f" }}
+            style={{ background: "var(--accent-green)", color: "#fff" }}
           >
             Best: {arb.bestLabel}
           </span>
