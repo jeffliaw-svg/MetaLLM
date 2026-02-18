@@ -58,7 +58,18 @@ const ENGINE_META: Record<Engine, { label: string; color: string; icon: string }
 };
 
 const RESPONSE_LABELS = ["A", "B", "C"];
-const LABEL_COLORS = ["#007aff", "#34c759", "#ff9f0a"];
+
+/** Map arbiter's anonymous A/B/C label to the actual engine's icon & color. */
+function engineIconForLabel(
+  label: string,
+  responses: ProviderResponse[]
+): { icon: string; color: string } {
+  const idx = RESPONSE_LABELS.indexOf(label);
+  if (idx >= 0 && idx < responses.length) {
+    return ENGINE_META[responses[idx].engine];
+  }
+  return { icon: label, color: "var(--border)" };
+}
 
 /* ── Page ───────────────────────────────────────────────────────────── */
 
@@ -73,6 +84,23 @@ export default function Home() {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Share / copy state
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Collapsible individual responses
+  const [expandedEngines, setExpandedEngines] = useState<Set<string>>(new Set());
+
+  function toggleEngine(eng: string) {
+    setExpandedEngines((prev) => {
+      const next = new Set(prev);
+      if (next.has(eng)) next.delete(eng);
+      else next.add(eng);
+      return next;
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!prompt.trim() || loading) return;
@@ -80,6 +108,8 @@ export default function Home() {
     setLoading(true);
     setResult(null);
     setError(null);
+    setShareUrl(null);
+    setExpandedEngines(new Set());
 
     const body: QueryRequest = {
       prompt: prompt.trim(),
@@ -98,11 +128,95 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Request failed.");
       setResult(data);
+
+      // Auto-save to Supabase
+      saveSearch(body, data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function saveSearch(req: QueryRequest, queryResult: QueryResult) {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: req.prompt,
+          mode: req.mode,
+          speed: req.speed,
+          length: req.length,
+          engine: req.engine ?? null,
+          arbiter: req.arbiter ?? null,
+          result: queryResult,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.id) {
+        setShareUrl(`${window.location.origin}/share/${data.id}`);
+      }
+    } catch {
+      // Save is best-effort — don't block the user
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function buildCopyText(): string {
+    if (!result) return "";
+    const lines: string[] = [`# MetaLLM Analysis`, "", `**Prompt:** ${prompt}`, ""];
+
+    if (result.kind === "single") {
+      const meta = ENGINE_META[result.response.engine];
+      lines.push(`## ${meta.label}`, "", result.response.text);
+    } else {
+      const arb = result.arbitration;
+      if (arb.synthesis) {
+        lines.push("## Synthesised Answer", "", arb.synthesis, "");
+      }
+      const bestMeta = ENGINE_META[arb.bestEngine];
+      lines.push(`## Arbiter Verdict`, "", `**Best: ${bestMeta.label}** — ${arb.bestRationale}`, "");
+      if (arb.consensus.length > 0) {
+        lines.push("## Consensus", "");
+        arb.consensus.forEach((p) => lines.push(`- ${p}`));
+        lines.push("");
+      }
+      if (arb.disagreements.length > 0) {
+        lines.push("## Disagreements", "");
+        arb.disagreements.forEach((d) => {
+          lines.push(`### ${d.topic}`, "");
+          Object.entries(d.positions).forEach(([lbl, pos]) => {
+            const em = engineIconForLabel(lbl, result.responses);
+            lines.push(`- **${em.icon}:** ${pos}`);
+          });
+          lines.push("", `*${d.assessment}*`, "");
+        });
+      }
+      // Only include expanded individual responses
+      result.responses.forEach((resp) => {
+        if (expandedEngines.has(resp.engine)) {
+          const meta = ENGINE_META[resp.engine];
+          lines.push(`## ${meta.label} Response`, "", resp.text, "");
+        }
+      });
+    }
+    return lines.join("\n");
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(buildCopyText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleCopyShareUrl() {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
@@ -231,7 +345,7 @@ export default function Home() {
                     ? `Querying all 3 engines \u00b7 ${arbiter} arbitrates`
                     : `Querying ${engine}`}
                   {" \u00b7 "}
-                  {speed} speed \u00b7 {length} length
+                  {speed} speed &middot; {length} length
                 </span>
                 <button
                   type="submit"
@@ -251,7 +365,7 @@ export default function Home() {
                   ) : (
                     <>
                       Run
-                      <span style={{ opacity: 0.5, fontSize: "0.75rem" }}>\u2318\u23CE</span>
+                      <span style={{ opacity: 0.5, fontSize: "0.75rem" }}>&thinsp;&#8984;&#9166;</span>
                     </>
                   )}
                 </button>
@@ -290,13 +404,51 @@ export default function Home() {
 
         {/* ── Results ───────────────────────────────────────────── */}
         {result && !loading && (
-          <div className="stagger">
-            {result.kind === "single" ? (
-              <ResponseCard response={result.response} />
-            ) : (
-              <BakeoffResults result={result} />
-            )}
-          </div>
+          <>
+            {/* Action bar: copy + share */}
+            <div className="flex items-center gap-3 mb-4 fade-in-up">
+              <button
+                onClick={handleCopy}
+                className="px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
+                style={{
+                  background: copied && !shareUrl ? "var(--accent-green)" : "var(--bg-input)",
+                  color: copied && !shareUrl ? "#fff" : "var(--text-secondary)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {copied && !shareUrl ? "Copied!" : "Copy results"}
+              </button>
+              {saving && (
+                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  Saving...
+                </span>
+              )}
+              {shareUrl && (
+                <button
+                  onClick={handleCopyShareUrl}
+                  className="px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
+                  style={{
+                    background: copied ? "var(--accent-green)" : "var(--accent-blue)",
+                    color: "#fff",
+                  }}
+                >
+                  {copied ? "Link copied!" : "Copy share link"}
+                </button>
+              )}
+            </div>
+
+            <div className="stagger">
+              {result.kind === "single" ? (
+                <ResponseCard response={result.response} />
+              ) : (
+                <BakeoffResults
+                  result={result}
+                  expandedEngines={expandedEngines}
+                  onToggle={toggleEngine}
+                />
+              )}
+            </div>
+          </>
         )}
       </main>
     </div>
@@ -344,36 +496,20 @@ function SettingSelect({
   );
 }
 
-/* ── Response Card (used in single mode and bake-off) ───────────────── */
+/* ── Response Card (single mode) ─────────────────────────────────────── */
 
-function ResponseCard({
-  response,
-  label,
-  labelColor,
-}: {
-  response: ProviderResponse;
-  label?: string;
-  labelColor?: string;
-}) {
+function ResponseCard({ response }: { response: ProviderResponse }) {
   const meta = ENGINE_META[response.engine];
   return (
     <div className="glass p-6 mb-4">
       <div className="flex items-center gap-3 mb-4">
-        {label && (
-          <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ background: labelColor, color: "#fff" }}
-          >
-            {label}
-          </span>
-        )}
         <span
           className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
           style={{ background: meta.color, color: "#fff" }}
         >
           {meta.icon}
         </span>
-        <span className="text-sm font-medium">{meta.label}</span>
+        <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
           {response.model}
         </span>
@@ -391,8 +527,20 @@ function ResponseCard({
 
 /* ── Bake-off Results ───────────────────────────────────────────────── */
 
-function BakeoffResults({ result }: { result: BakeoffResult }) {
+function BakeoffResults({
+  result,
+  expandedEngines,
+  onToggle,
+}: {
+  result: BakeoffResult;
+  expandedEngines: Set<string>;
+  onToggle: (engine: string) => void;
+}) {
   const arb = result.arbitration;
+
+  function iconForLabel(label: string) {
+    return engineIconForLabel(label, result.responses);
+  }
 
   return (
     <>
@@ -410,7 +558,7 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
         </>
       )}
 
-      {/* Verdict */}
+      {/* Verdict — now shows engine icon instead of A/B/C */}
       <div className="mt-8 mb-2">
         <SectionLabel>Arbiter Verdict</SectionLabel>
       </div>
@@ -420,9 +568,9 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
             className="px-3 py-1 rounded-full text-xs font-bold"
             style={{ background: "var(--accent-green)", color: "#fff" }}
           >
-            Best: {arb.bestLabel}
+            Best: {ENGINE_META[arb.bestEngine].icon}
           </span>
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             {ENGINE_META[arb.bestEngine].label}
           </span>
         </div>
@@ -450,7 +598,7 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
         </>
       )}
 
-      {/* Disagreements */}
+      {/* Disagreements — engine icons instead of A/B/C circles */}
       {arb.disagreements.length > 0 && (
         <>
           <div className="mt-8 mb-2">
@@ -462,20 +610,20 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
                 {d.topic}
               </h4>
               <div className="space-y-2 mb-4">
-                {Object.entries(d.positions).map(([lbl, pos]) => (
-                  <div key={lbl} className="flex gap-3 text-sm">
-                    <span
-                      className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                      style={{
-                        background: LABEL_COLORS[RESPONSE_LABELS.indexOf(lbl)] ?? "var(--border)",
-                        color: "#fff",
-                      }}
-                    >
-                      {lbl}
-                    </span>
-                    <span style={{ color: "var(--text-secondary)" }}>{pos}</span>
-                  </div>
-                ))}
+                {Object.entries(d.positions).map(([lbl, pos]) => {
+                  const em = iconForLabel(lbl);
+                  return (
+                    <div key={lbl} className="flex gap-3 text-sm">
+                      <span
+                        className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                        style={{ background: em.color, color: "#fff" }}
+                      >
+                        {em.icon}
+                      </span>
+                      <span style={{ color: "var(--text-secondary)" }}>{pos}</span>
+                    </div>
+                  );
+                })}
               </div>
               <p className="text-sm italic" style={{ color: "var(--text-tertiary)" }}>
                 {d.assessment}
@@ -485,18 +633,55 @@ function BakeoffResults({ result }: { result: BakeoffResult }) {
         </>
       )}
 
-      {/* Individual responses last */}
+      {/* Individual responses — collapsible, hidden by default */}
       <div className="mt-8 mb-2">
         <SectionLabel>Individual Responses</SectionLabel>
       </div>
-      {result.responses.map((r, i) => (
-        <ResponseCard
-          key={r.engine}
-          response={r}
-          label={RESPONSE_LABELS[i]}
-          labelColor={LABEL_COLORS[i]}
-        />
-      ))}
+      {result.responses.map((r) => {
+        const meta = ENGINE_META[r.engine];
+        const isOpen = expandedEngines.has(r.engine);
+        return (
+          <div key={r.engine} className="glass mb-4 overflow-hidden">
+            <button
+              onClick={() => onToggle(r.engine)}
+              className="w-full p-6 flex items-center gap-3 text-left"
+              style={{ cursor: "pointer" }}
+            >
+              <span
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ background: meta.color, color: "#fff" }}
+              >
+                {meta.icon}
+              </span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+              <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                {r.model}
+              </span>
+              <span className="ml-auto text-xs" style={{ color: "var(--text-tertiary)" }}>
+                {r.latencySeconds}s &middot; {r.inputTokens + r.outputTokens} tokens
+              </span>
+              <span
+                className="ml-2 text-xs"
+                style={{
+                  color: "var(--text-tertiary)",
+                  transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 0.15s ease",
+                  display: "inline-block",
+                }}
+              >
+                &#9654;
+              </span>
+            </button>
+            {isOpen && (
+              <div className="px-6 pb-6">
+                <div className="prose-response text-sm leading-relaxed">
+                  <ReactMarkdown>{r.text}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
