@@ -13,25 +13,21 @@ export async function queryChatGPT(
   const preset = LENGTH_PRESETS[length];
 
   const t0 = performance.now();
-  const response = await client.chat.completions.create({
+  const response = await client.responses.create({
     model,
-    max_completion_tokens: preset.maxTokens,
-    messages: [
-      { role: "system", content: preset.systemInstruction },
-      { role: "user", content: prompt },
-    ],
+    instructions: preset.systemInstruction,
+    input: prompt,
+    tools: [{ type: "web_search_preview" }],
+    max_output_tokens: preset.maxTokens,
   });
   const latency = (performance.now() - t0) / 1000;
-
-  const choice = response.choices[0];
-  const usage = response.usage;
 
   return {
     engine: "chatgpt",
     model,
-    text: choice?.message?.content ?? "",
+    text: response.output_text ?? "",
     latencySeconds: Math.round(latency * 100) / 100,
-    inputTokens: usage?.prompt_tokens ?? 0,
-    outputTokens: usage?.completion_tokens ?? 0,
+    inputTokens: response.usage?.input_tokens ?? 0,
+    outputTokens: response.usage?.output_tokens ?? 0,
   };
 }
