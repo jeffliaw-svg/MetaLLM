@@ -58,20 +58,66 @@ interface SavedSearch {
 
 /* ── Constants ─────────────────────────────────────────────────────── */
 
-const ENGINE_META: Record<Engine, { label: string; color: string; icon: string }> = {
-  claude: { label: "Claude", color: "#af52de", icon: "C" },
-  gemini: { label: "Gemini", color: "#34c759", icon: "G" },
-  chatgpt: { label: "ChatGPT", color: "#ff9f0a", icon: "O" },
+const ENGINE_META: Record<Engine, { label: string; color: string }> = {
+  claude: { label: "Claude", color: "#da7756" },
+  gemini: { label: "Gemini", color: "#4285f4" },
+  chatgpt: { label: "ChatGPT", color: "#10a37f" },
 };
 
 const RESPONSE_LABELS = ["A", "B", "C"];
 
-function engineIconForLabel(label: string, responses: ProviderResponse[]): { icon: string; color: string } {
+function engineForLabel(label: string, responses: ProviderResponse[]): { engine: Engine | null; color: string } {
   const idx = RESPONSE_LABELS.indexOf(label);
   if (idx >= 0 && idx < responses.length) {
-    return ENGINE_META[responses[idx].engine];
+    const eng = responses[idx].engine;
+    return { engine: eng, color: ENGINE_META[eng].color };
   }
-  return { icon: label, color: "var(--border)" };
+  return { engine: null, color: "var(--border)" };
+}
+
+/* ── Brand Logo SVG Components ────────────────────────────────────── */
+
+function ClaudeLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M30.8 13.2L24.4 31.5l-2.8-1 5.4-15.5c.4-1.1 1.6-1.6 2.7-1.2.5.2.9.6 1.1 1.1v.3z" fill="#da7756"/>
+      <path d="M34.9 18.5l-8.3 13.1-2.4-1.5 7-11.1c.6-1 1.9-1.3 2.9-.7.4.3.7.7.8 1.2v.1l-.1-.1.1 1z" fill="#da7756"/>
+      <path d="M17.1 13.2l6.4 18.3 2.8-1-5.4-15.5c-.4-1.1-1.6-1.6-2.7-1.2-.5.2-.9.6-1.1 1.1v.3z" fill="#da7756"/>
+      <path d="M13.1 18.5l8.3 13.1 2.4-1.5-7-11.1c-.6-1-1.9-1.3-2.9-.7-.4.3-.7.7-.8 1.2v.1l.1-.1-.1 1z" fill="#da7756"/>
+      <circle cx="24" cy="10" r="2.5" fill="#da7756"/>
+    </svg>
+  );
+}
+
+function GeminiLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M24 4C24 15.05 15.05 24 4 24c11.05 0 20 8.95 20 20 0-11.05 8.95-20 20-20-11.05 0-20-8.95-20-20z" fill="url(#gemini-grad-share)"/>
+      <defs>
+        <linearGradient id="gemini-grad-share" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4285f4"/>
+          <stop offset="0.5" stopColor="#9b72cb"/>
+          <stop offset="1" stopColor="#d96570"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function OpenAILogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M41.2 20.3a10.7 10.7 0 00-.9-8.8 10.8 10.8 0 00-11.6-5.2A10.8 10.8 0 0020.6 2a10.7 10.7 0 00-10.2 7.4 10.7 10.7 0 00-7.2 5.2 10.8 10.8 0 001.3 12.6 10.7 10.7 0 00.9 8.8 10.8 10.8 0 0011.6 5.2A10.8 10.8 0 0027.4 46a10.7 10.7 0 0010.2-7.4 10.7 10.7 0 007.2-5.2 10.8 10.8 0 00-1.3-12.6l-2.3-.5zM27.4 43.4a8 8 0 01-5.2-1.9l.3-.1 8.5-4.9a1.4 1.4 0 00.7-1.2V22.7l3.6 2.1v12.6a8.1 8.1 0 01-7.9 6zM8.4 35.5a8 8 0 01-1-5.4l.3.2 8.5 4.9a1.4 1.4 0 001.4 0l10.4-6v4.1l-8.6 5a8.1 8.1 0 01-11-2.8zM6.2 16a8 8 0 014.2-3.5v10.1a1.4 1.4 0 00.7 1.2l10.4 6-3.6 2.1L9.4 27a8.1 8.1 0 01-3.2-11zm28.2 6.6L24 16.5l3.6-2.1 8.5 4.9a8.1 8.1 0 011.2 13.3V22.5a1.4 1.4 0 00-.7-1.2l-2.2.3zm3.5-5.5l-.3-.2-8.5-4.9a1.4 1.4 0 00-1.4 0l-10.4 6V14l8.6-5a8.1 8.1 0 0112 7.1zm-22.5 7.4l-3.6-2.1V10.9a8.1 8.1 0 0113.2-6.3l-.3.2-8.5 4.9a1.4 1.4 0 00-.7 1.2l-.1 12.6zm2-4.2l4.6-2.7 4.6 2.7v5.3l-4.6 2.7-4.6-2.7v-5.3z" fill="#10a37f"/>
+    </svg>
+  );
+}
+
+function EngineLogo({ engine, size = 24 }: { engine: Engine; size?: number }) {
+  switch (engine) {
+    case "claude": return <ClaudeLogo size={size} />;
+    case "gemini": return <GeminiLogo size={size} />;
+    case "chatgpt": return <OpenAILogo size={size} />;
+  }
 }
 
 /* ── Trophy icon ────────────────────────────────────────────────────── */
@@ -128,7 +174,7 @@ export default function SharePage() {
   function buildCopyText(): string {
     if (!search) return "";
     const r = search.result;
-    const lines: string[] = [`# MetaLLM Analysis`, "", `**Prompt:** ${search.prompt}`, ""];
+    const lines: string[] = [`# LLM Showdown Analysis`, "", `**Prompt:** ${search.prompt}`, ""];
 
     if (r.kind === "single") {
       const meta = ENGINE_META[r.response.engine];
@@ -150,8 +196,9 @@ export default function SharePage() {
         arb.disagreements.forEach((d) => {
           lines.push(`### ${d.topic}`, "");
           Object.entries(d.positions).forEach(([lbl, pos]) => {
-            const em = engineIconForLabel(lbl, r.responses);
-            lines.push(`- **${em.icon}:** ${pos}`);
+            const em = engineForLabel(lbl, r.responses);
+            const name = em.engine ? ENGINE_META[em.engine].label : lbl;
+            lines.push(`- **${name}:** ${pos}`);
           });
           lines.push("", `*${d.assessment}*`, "");
         });
@@ -202,7 +249,7 @@ export default function SharePage() {
     <div className="min-h-screen flex flex-col">
       <header className="pt-14 pb-8 px-6 text-center">
         <h1 className="text-4xl font-extrabold tracking-tight" style={{ letterSpacing: "-0.04em" }}>
-          Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
+          LLM <span style={{ color: "var(--accent-blue)" }}>Showdown</span>
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
           Shared analysis
@@ -282,11 +329,8 @@ function SharedResponseCard({ response }: { response: ProviderResponse }) {
       }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <span
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-          style={{ background: meta.color, color: "#fff" }}
-        >
-          {meta.icon}
+        <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+          <EngineLogo engine={response.engine} size={28} />
         </span>
         <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
@@ -318,8 +362,8 @@ function SharedBakeoffResults({
   const arb = result.arbitration;
   const winnerMeta = ENGINE_META[arb.bestEngine];
 
-  function iconForLabel(label: string) {
-    return engineIconForLabel(label, result.responses);
+  function resolveLabel(label: string) {
+    return engineForLabel(label, result.responses);
   }
 
   return (
@@ -362,12 +406,7 @@ function SharedBakeoffResults({
             <TrophyIcon size={13} color="#fff" />
             {winnerMeta.label}
           </span>
-          <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ background: winnerMeta.color, color: "#fff" }}
-          >
-            {winnerMeta.icon}
-          </span>
+          <EngineLogo engine={arb.bestEngine} size={26} />
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           {arb.bestRationale}
@@ -419,14 +458,13 @@ function SharedBakeoffResults({
               </h4>
               <div className="space-y-2.5 mb-4">
                 {Object.entries(d.positions).map(([lbl, pos]) => {
-                  const em = iconForLabel(lbl);
+                  const em = resolveLabel(lbl);
                   return (
                     <div key={lbl} className="flex gap-3 text-sm">
-                      <span
-                        className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                        style={{ background: em.color, color: "#fff" }}
-                      >
-                        {em.icon}
+                      <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                        {em.engine ? <EngineLogo engine={em.engine} size={22} /> : (
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: em.color, color: "#fff" }}>{lbl}</span>
+                        )}
                       </span>
                       <span style={{ color: "var(--text-secondary)" }}>{pos}</span>
                     </div>
@@ -454,17 +492,14 @@ function SharedBakeoffResults({
               className="accordion-trigger w-full p-5 flex items-center gap-3 text-left"
               style={{ cursor: "pointer" }}
             >
-              <span
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: meta.color, color: "#fff" }}
-              >
-                {meta.icon}
+              <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                <EngineLogo engine={r.engine} size={28} />
               </span>
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
-              <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+              <span className="text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
                 {r.model}
               </span>
-              <span className="ml-auto text-xs" style={{ color: "var(--text-tertiary)" }}>
+              <span className="ml-auto text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
                 {r.latencySeconds}s &middot; {r.inputTokens + r.outputTokens} tokens
               </span>
               <span
