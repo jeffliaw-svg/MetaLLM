@@ -18,6 +18,7 @@ export async function queryClaude(
     max_tokens: preset.maxTokens,
     system: preset.systemInstruction,
     messages: [{ role: "user", content: prompt }],
+    tools: [{ type: "web_search_20250305", name: "web_search" }],
   });
   const latency = (performance.now() - t0) / 1000;
 

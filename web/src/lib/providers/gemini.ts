@@ -28,6 +28,7 @@ export async function queryGemini(
       ...(isThinkingModel && {
         thinkingConfig: { thinkingBudget: THINKING_BUDGET },
       }),
+      tools: [{ googleSearch: {} }],
     },
   });
   const latency = (performance.now() - t0) / 1000;

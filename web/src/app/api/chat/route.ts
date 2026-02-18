@@ -26,6 +26,7 @@ async function chatClaude(model: string, messages: ChatMessage[]): Promise<strin
     model,
     max_tokens: 1500,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    tools: [{ type: "web_search_20250305", name: "web_search" }],
   });
   return result.content
     .filter((b) => b.type === "text")
@@ -47,21 +48,24 @@ async function chatGemini(model: string, messages: ChatMessage[]): Promise<strin
       ...(isThinkingModel && {
         thinkingConfig: { thinkingBudget: 128 },
       }),
+      tools: [{ googleSearch: {} }],
     },
   });
   return result.text ?? "";
 }
 
 async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<string> {
-  const result = await openai.chat.completions.create({
+  const input = messages.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
+  const result = await openai.responses.create({
     model,
-    max_completion_tokens: 1500,
-    messages: messages.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
+    input,
+    tools: [{ type: "web_search_preview" }],
+    max_output_tokens: 1500,
   });
-  return result.choices[0]?.message?.content ?? "";
+  return result.output_text ?? "";
 }
 
 export async function POST(request: Request) {
