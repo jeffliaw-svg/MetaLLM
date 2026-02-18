@@ -904,8 +904,8 @@ function BakeoffResults({
                   <ReactMarkdown>{r.text}</ReactMarkdown>
                 </div>
 
-                {/* Continue Discussion */}
-                {!cs.open ? (
+                {/* Continue Discussion button — only when chat not yet started */}
+                {!cs.open && (
                   <button
                     onClick={() => updateChatState(r.engine, { open: true })}
                     className="continue-btn mt-4"
@@ -914,54 +914,58 @@ function BakeoffResults({
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     Continue discussion with {meta.label}
                   </button>
-                ) : (
-                  <div className="chat-continuation mt-4" style={{ borderColor: meta.color }}>
-                    {cs.messages.map((msg, i) => (
-                      <div key={i} className={`chat-msg ${msg.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}`}>
-                        {msg.role === "assistant" && (
-                          <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
-                        )}
-                        <div className={`chat-msg-bubble ${msg.role === "user" ? "chat-msg-bubble-user" : "chat-msg-bubble-assistant"}`}>
-                          {msg.role === "assistant" ? (
-                            <div className="prose-response text-sm leading-relaxed"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
-                          ) : (
-                            <p className="text-sm">{msg.text}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {cs.loading && (
-                      <div className="chat-msg chat-msg-assistant">
-                        <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
-                        <div className="chat-msg-bubble chat-msg-bubble-assistant">
-                          <div className="flex gap-1.5 py-1">
-                            <div className="pulse-dot" style={{ background: meta.color }} />
-                            <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.2s" }} />
-                            <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.4s" }} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={el => { chatEndRefs.current[r.engine] = el; }} />
-                    <form onSubmit={(e) => handleContinue(r.engine, r.model, r.text, e)} className="chat-input-row">
-                      <input
-                        value={cs.input}
-                        onChange={(e) => updateChatState(r.engine, { input: e.target.value })}
-                        placeholder={`Ask ${meta.label} a follow-up...`}
-                        className="chat-input"
-                        disabled={cs.loading}
-                      />
-                      <button
-                        type="submit"
-                        disabled={cs.loading || !cs.input.trim()}
-                        className="chat-send-btn"
-                        style={{ background: cs.loading || !cs.input.trim() ? "var(--border)" : meta.color }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      </button>
-                    </form>
-                  </div>
                 )}
+              </div>
+            )}
+            {/* Chat continuation — renders independently of accordion so responses always have a place */}
+            {cs.open && (
+              <div className="px-6 pb-6" style={!isOpen ? { borderTop: "1px solid var(--border)" } : {}}>
+                <div className="chat-continuation mt-4" style={{ borderColor: meta.color }}>
+                  {cs.messages.map((msg, i) => (
+                    <div key={i} className={`chat-msg ${msg.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}`}>
+                      {msg.role === "assistant" && (
+                        <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
+                      )}
+                      <div className={`chat-msg-bubble ${msg.role === "user" ? "chat-msg-bubble-user" : "chat-msg-bubble-assistant"}`}>
+                        {msg.role === "assistant" ? (
+                          <div className="prose-response text-sm leading-relaxed"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
+                        ) : (
+                          <p className="text-sm">{msg.text}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {cs.loading && (
+                    <div className="chat-msg chat-msg-assistant">
+                      <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
+                      <div className="chat-msg-bubble chat-msg-bubble-assistant">
+                        <div className="flex gap-1.5 py-1">
+                          <div className="pulse-dot" style={{ background: meta.color }} />
+                          <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.2s" }} />
+                          <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.4s" }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={el => { chatEndRefs.current[r.engine] = el; }} />
+                  <form onSubmit={(e) => handleContinue(r.engine, r.model, r.text, e)} className="chat-input-row">
+                    <input
+                      value={cs.input}
+                      onChange={(e) => updateChatState(r.engine, { input: e.target.value })}
+                      placeholder={`Ask ${meta.label} a follow-up...`}
+                      className="chat-input"
+                      disabled={cs.loading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={cs.loading || !cs.input.trim()}
+                      className="chat-send-btn"
+                      style={{ background: cs.loading || !cs.input.trim() ? "var(--border)" : meta.color }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
           </div>
