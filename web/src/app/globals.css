@@ -7,7 +7,7 @@
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-card-hover: #fafafa;
-  --bg-input: #eff0f3;
+  --bg-input: #f0f1f4;
   --border: #d5d5db;
   --border-active: #007aff;
   --text-primary: #1d1d1f;
@@ -27,33 +27,165 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Card */
+/* ── Setting Label ──────────────────────────────────────────────────── */
+
+.setting-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+/* ── Segmented Control ──────────────────────────────────────────────── */
+
+.segmented-control {
+  display: inline-flex;
+  background: var(--bg-input);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented-control-full {
+  display: flex;
+  width: 100%;
+}
+
+.segmented-option {
+  flex: 1;
+  padding: 7px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.segmented-option:hover:not(.segmented-active) {
+  color: var(--text-secondary);
+}
+
+.segmented-active {
+  background: #fff;
+  color: var(--text-primary);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Engine / Arbiter Cards ─────────────────────────────────────────── */
+
+.engine-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.engine-card:hover {
+  border-color: var(--text-tertiary);
+}
+
+.engine-card-active {
+  border-color: var(--engine-color);
+  background: color-mix(in srgb, var(--engine-color) 4%, white);
+  box-shadow: 0 0 0 1px var(--engine-color);
+}
+
+.engine-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.engine-card-active .engine-radio {
+  border-color: var(--engine-color);
+}
+
+.engine-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.engine-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.engine-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ── Submit Button ──────────────────────────────────────────────────── */
+
+.submit-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.submit-btn:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+/* ── Card ───────────────────────────────────────────────────────────── */
+
 .glass {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    0 4px 16px rgba(0, 0, 0, 0.03);
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.02);
 }
 
 .glass:hover {
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.07),
-    0 4px 20px rgba(0, 0, 0, 0.04);
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 /* Left accent stripe cards */
 .card-accent {
   border-left-width: 4px;
   border-left-style: solid;
-  border-radius: 4px 16px 16px 4px;
+  border-radius: 4px 14px 14px 4px;
 }
 
 /* Accordion trigger */
 .accordion-trigger {
   transition: background 0.15s ease;
-  border-radius: 16px;
+  border-radius: 14px;
 }
 .accordion-trigger:hover {
   background: var(--bg-card-hover);
@@ -61,14 +193,14 @@ body {
 
 /* Floating action bar */
 .action-bar {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(213, 213, 219, 0.5);
   border-radius: 999px;
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.08),
-    0 1px 4px rgba(0, 0, 0, 0.04);
+    0 4px 24px rgba(0, 0, 0, 0.07),
+    0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
 /* Smooth transitions on interactive elements */
@@ -76,36 +208,23 @@ button, select, input, textarea, .glass {
   transition: all 0.15s ease;
 }
 
-/* Custom select styling */
-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aeaeb2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
+/* ── Spinner ────────────────────────────────────────────────────────── */
 
-select:focus {
-  outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-}
-
-/* Spinner */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 .spinner {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border: 2px solid var(--border);
-  border-top-color: var(--accent-blue);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-/* Fade in animation */
+/* ── Fade in animation ──────────────────────────────────────────────── */
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -137,7 +256,8 @@ select:focus {
 .stagger > *:nth-child(9) { animation-delay: 0.45s; }
 .stagger > *:nth-child(10) { animation-delay: 0.5s; }
 
-/* Pulse dots for loading */
+/* ── Pulse dots for loading ─────────────────────────────────────────── */
+
 @keyframes pulse-dot {
   0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
   40% { opacity: 1; transform: scale(1); }
@@ -153,17 +273,19 @@ select:focus {
 .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
 .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* Textarea styling */
+/* ── Textarea ───────────────────────────────────────────────────────── */
+
 textarea {
   resize: vertical;
 }
 textarea:focus {
   outline: none;
   border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
 }
 
-/* Markdown content styling */
+/* ── Markdown content styling ───────────────────────────────────────── */
+
 .prose-response h1, .prose-response h2, .prose-response h3 {
   color: var(--text-primary);
   font-weight: 600;

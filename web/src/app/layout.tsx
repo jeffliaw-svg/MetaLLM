@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MetaLLM",
+  title: "MetaLLM: Claude vs. Gemini vs. ChatGPT",
   description: "Multi-AI arbitration — query Claude, Gemini, and ChatGPT, then let an arbiter choose the best.",
 };
 
