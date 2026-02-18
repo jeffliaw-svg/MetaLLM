@@ -58,8 +58,10 @@ export async function arbitrate(
   const queryFn = getQueryFn(arbiterEngine);
   const fullPrompt = `${ARBITER_SYSTEM}\n\n---\n\n${buildArbiterPrompt(prompt, responses)}`;
 
-  // Arbiter always runs at research speed + research length.
-  const arbiterResponse = await queryFn(fullPrompt, "research", "research");
+  // Arbiter always runs at research speed + research length, with web search
+  // disabled so the model focuses on evaluating the provided responses and
+  // returns strict JSON.
+  const arbiterResponse = await queryFn(fullPrompt, "research", "research", { webSearch: false });
 
   // Parse JSON from the response — strip markdown fences if present.
   let jsonText = arbiterResponse.text.trim();

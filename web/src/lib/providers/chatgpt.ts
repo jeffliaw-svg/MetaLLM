@@ -7,7 +7,8 @@ const client = new OpenAI();
 export async function queryChatGPT(
   prompt: string,
   speed: Speed,
-  length: Length
+  length: Length,
+  { webSearch = true }: { webSearch?: boolean } = {}
 ): Promise<ProviderResponse> {
   const model = MODEL_MAP.chatgpt[speed];
   const preset = LENGTH_PRESETS[length];
@@ -17,7 +18,7 @@ export async function queryChatGPT(
     model,
     instructions: preset.systemInstruction,
     input: prompt,
-    tools: [{ type: "web_search_preview" }],
+    ...(webSearch && { tools: [{ type: "web_search_preview" as const }] }),
     max_output_tokens: preset.maxTokens,
   });
   const latency = (performance.now() - t0) / 1000;
