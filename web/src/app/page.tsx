@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import type {
   Engine,
@@ -51,11 +51,56 @@ type QueryResult = SingleResult | BakeoffResult;
 
 /* ── Constants ──────────────────────────────────────────────────────── */
 
-const ENGINE_META: Record<Engine, { label: string; color: string; icon: string }> = {
-  claude: { label: "Claude", color: "#af52de", icon: "C" },
-  gemini: { label: "Gemini", color: "#34c759", icon: "G" },
-  chatgpt: { label: "ChatGPT", color: "#ff9f0a", icon: "O" },
+const ENGINE_META: Record<Engine, { label: string; color: string }> = {
+  claude: { label: "Claude", color: "#da7756" },
+  gemini: { label: "Gemini", color: "#4285f4" },
+  chatgpt: { label: "ChatGPT", color: "#10a37f" },
 };
+
+/* ── Brand Logo SVG Components ────────────────────────────────────── */
+
+function ClaudeLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M30.8 13.2L24.4 31.5l-2.8-1 5.4-15.5c.4-1.1 1.6-1.6 2.7-1.2.5.2.9.6 1.1 1.1v.3z" fill="#da7756"/>
+      <path d="M34.9 18.5l-8.3 13.1-2.4-1.5 7-11.1c.6-1 1.9-1.3 2.9-.7.4.3.7.7.8 1.2v.1l-.1-.1.1 1z" fill="#da7756"/>
+      <path d="M17.1 13.2l6.4 18.3 2.8-1-5.4-15.5c-.4-1.1-1.6-1.6-2.7-1.2-.5.2-.9.6-1.1 1.1v.3z" fill="#da7756"/>
+      <path d="M13.1 18.5l8.3 13.1 2.4-1.5-7-11.1c-.6-1-1.9-1.3-2.9-.7-.4.3-.7.7-.8 1.2v.1l.1-.1-.1 1z" fill="#da7756"/>
+      <circle cx="24" cy="10" r="2.5" fill="#da7756"/>
+    </svg>
+  );
+}
+
+function GeminiLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M24 4C24 15.05 15.05 24 4 24c11.05 0 20 8.95 20 20 0-11.05 8.95-20 20-20-11.05 0-20-8.95-20-20z" fill="url(#gemini-grad)"/>
+      <defs>
+        <linearGradient id="gemini-grad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4285f4"/>
+          <stop offset="0.5" stopColor="#9b72cb"/>
+          <stop offset="1" stopColor="#d96570"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function OpenAILogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M41.2 20.3a10.7 10.7 0 00-.9-8.8 10.8 10.8 0 00-11.6-5.2A10.8 10.8 0 0020.6 2a10.7 10.7 0 00-10.2 7.4 10.7 10.7 0 00-7.2 5.2 10.8 10.8 0 001.3 12.6 10.7 10.7 0 00.9 8.8 10.8 10.8 0 0011.6 5.2A10.8 10.8 0 0027.4 46a10.7 10.7 0 0010.2-7.4 10.7 10.7 0 007.2-5.2 10.8 10.8 0 00-1.3-12.6l-2.3-.5zM27.4 43.4a8 8 0 01-5.2-1.9l.3-.1 8.5-4.9a1.4 1.4 0 00.7-1.2V22.7l3.6 2.1v12.6a8.1 8.1 0 01-7.9 6zM8.4 35.5a8 8 0 01-1-5.4l.3.2 8.5 4.9a1.4 1.4 0 001.4 0l10.4-6v4.1l-8.6 5a8.1 8.1 0 01-11-2.8zM6.2 16a8 8 0 014.2-3.5v10.1a1.4 1.4 0 00.7 1.2l10.4 6-3.6 2.1L9.4 27a8.1 8.1 0 01-3.2-11zm28.2 6.6L24 16.5l3.6-2.1 8.5 4.9a8.1 8.1 0 011.2 13.3V22.5a1.4 1.4 0 00-.7-1.2l-2.2.3zm3.5-5.5l-.3-.2-8.5-4.9a1.4 1.4 0 00-1.4 0l-10.4 6V14l8.6-5a8.1 8.1 0 0112 7.1zm-22.5 7.4l-3.6-2.1V10.9a8.1 8.1 0 0113.2-6.3l-.3.2-8.5 4.9a1.4 1.4 0 00-.7 1.2l-.1 12.6zm2-4.2l4.6-2.7 4.6 2.7v5.3l-4.6 2.7-4.6-2.7v-5.3z" fill="#10a37f"/>
+    </svg>
+  );
+}
+
+function EngineLogo({ engine, size = 24 }: { engine: Engine; size?: number }) {
+  switch (engine) {
+    case "claude": return <ClaudeLogo size={size} />;
+    case "gemini": return <GeminiLogo size={size} />;
+    case "chatgpt": return <OpenAILogo size={size} />;
+  }
+}
 
 const ENGINES: Engine[] = ["claude", "gemini", "chatgpt"];
 
@@ -74,16 +119,17 @@ const LENGTH_OPTIONS: { value: Length; label: string }[] = [
 
 const RESPONSE_LABELS = ["A", "B", "C"];
 
-/** Map arbiter's anonymous A/B/C label to the actual engine's icon & color. */
-function engineIconForLabel(
+/** Map arbiter's anonymous A/B/C label to the actual engine key & color. */
+function engineForLabel(
   label: string,
   responses: ProviderResponse[]
-): { icon: string; color: string } {
+): { engine: Engine | null; color: string } {
   const idx = RESPONSE_LABELS.indexOf(label);
   if (idx >= 0 && idx < responses.length) {
-    return ENGINE_META[responses[idx].engine];
+    const eng = responses[idx].engine;
+    return { engine: eng, color: ENGINE_META[eng].color };
   }
-  return { icon: label, color: "var(--border)" };
+  return { engine: null, color: "var(--border)" };
 }
 
 /* ── Trophy icon ────────────────────────────────────────────────────── */
@@ -197,7 +243,7 @@ export default function Home() {
 
   function buildCopyText(): string {
     if (!result) return "";
-    const lines: string[] = [`# MetaLLM Analysis`, "", `**Prompt:** ${prompt}`, ""];
+    const lines: string[] = [`# LLM Showdown Analysis`, "", `**Prompt:** ${prompt}`, ""];
 
     if (result.kind === "single") {
       const meta = ENGINE_META[result.response.engine];
@@ -219,8 +265,9 @@ export default function Home() {
         arb.disagreements.forEach((d) => {
           lines.push(`### ${d.topic}`, "");
           Object.entries(d.positions).forEach(([lbl, pos]) => {
-            const em = engineIconForLabel(lbl, result.responses);
-            lines.push(`- **${em.icon}:** ${pos}`);
+            const em = engineForLabel(lbl, result.responses);
+            const name = em.engine ? ENGINE_META[em.engine].label : lbl;
+            lines.push(`- **${name}:** ${pos}`);
           });
           lines.push("", `*${d.assessment}*`, "");
         });
@@ -254,11 +301,18 @@ export default function Home() {
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="pt-12 pb-6 px-6 text-center">
         <h1 className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
-          Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
+          LLM <span style={{ color: "var(--accent-blue)" }}>Showdown</span>
         </h1>
-        <p className="mt-1.5 text-sm font-medium" style={{ color: "var(--text-tertiary)", letterSpacing: "0.01em" }}>
-          Claude vs. Gemini vs. ChatGPT
-        </p>
+        <div className="mt-3 flex items-center justify-center gap-3">
+          <EngineLogo engine="claude" size={22} />
+          <span className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Claude</span>
+          <span className="text-lg font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
+          <EngineLogo engine="gemini" size={22} />
+          <span className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Gemini</span>
+          <span className="text-lg font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
+          <EngineLogo engine="chatgpt" size={22} />
+          <span className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>ChatGPT</span>
+        </div>
       </header>
 
       {/* ── Main content ────────────────────────────────────────────── */}
@@ -328,7 +382,7 @@ export default function Home() {
               <span className="setting-label mb-2 block">
                 {mode === "single" ? "Engine" : "Arbiter"}
               </span>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="engine-grid">
                 {ENGINES.map((eng) => {
                   const meta = ENGINE_META[eng];
                   const isSelected = mode === "single" ? engine === eng : arbiter === eng;
@@ -347,11 +401,8 @@ export default function Home() {
                       <span className="engine-radio">
                         {isSelected && <span className="engine-radio-dot" style={{ background: meta.color }} />}
                       </span>
-                      <span
-                        className="engine-icon"
-                        style={{ background: meta.color }}
-                      >
-                        {meta.icon}
+                      <span className="engine-logo-wrap">
+                        <EngineLogo engine={eng} size={22} />
                       </span>
                       <span className="engine-name">{meta.label}</span>
                     </button>
@@ -514,6 +565,41 @@ export default function Home() {
 
 function ResponseCard({ response }: { response: ProviderResponse }) {
   const meta = ENGINE_META[response.engine];
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  async function handleContinue(e: React.FormEvent) {
+    e.preventDefault();
+    if (!chatInput.trim() || chatLoading) return;
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    const newMessages = [...chatMessages, { role: "user" as const, text: userMsg }];
+    setChatMessages(newMessages);
+    setChatLoading(true);
+    try {
+      const history = [
+        { role: "user" as const, content: response.text.length > 0 ? `[Previous context: I asked a question and you responded with the following]\n\n${response.text}` : "" },
+        ...newMessages.map(m => ({ role: m.role, content: m.text })),
+      ];
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ engine: response.engine, model: response.model, messages: history }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setChatMessages([...newMessages, { role: "assistant", text: data.text }]);
+    } catch {
+      setChatMessages([...newMessages, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
+    } finally {
+      setChatLoading(false);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+  }
+
   return (
     <div
       className="glass card-accent p-6 mb-4"
@@ -523,11 +609,8 @@ function ResponseCard({ response }: { response: ProviderResponse }) {
       }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <span
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-          style={{ background: meta.color, color: "#fff" }}
-        >
-          {meta.icon}
+        <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+          <EngineLogo engine={response.engine} size={28} />
         </span>
         <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
@@ -541,6 +624,65 @@ function ResponseCard({ response }: { response: ProviderResponse }) {
       <div className="prose-response text-sm leading-relaxed">
         <ReactMarkdown>{response.text}</ReactMarkdown>
       </div>
+
+      {/* Continue Discussion */}
+      {!chatOpen ? (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="continue-btn mt-4"
+          style={{ "--engine-color": meta.color } as React.CSSProperties}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Continue discussion with {meta.label}
+        </button>
+      ) : (
+        <div className="chat-continuation mt-4" style={{ borderColor: meta.color }}>
+          {chatMessages.map((msg, i) => (
+            <div key={i} className={`chat-msg ${msg.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}`}>
+              {msg.role === "assistant" && (
+                <span className="chat-msg-avatar"><EngineLogo engine={response.engine} size={18} /></span>
+              )}
+              <div className={`chat-msg-bubble ${msg.role === "user" ? "chat-msg-bubble-user" : "chat-msg-bubble-assistant"}`}>
+                {msg.role === "assistant" ? (
+                  <div className="prose-response text-sm leading-relaxed"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
+                ) : (
+                  <p className="text-sm">{msg.text}</p>
+                )}
+              </div>
+            </div>
+          ))}
+          {chatLoading && (
+            <div className="chat-msg chat-msg-assistant">
+              <span className="chat-msg-avatar"><EngineLogo engine={response.engine} size={18} /></span>
+              <div className="chat-msg-bubble chat-msg-bubble-assistant">
+                <div className="flex gap-1.5 py-1">
+                  <div className="pulse-dot" style={{ background: meta.color }} />
+                  <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.2s" }} />
+                  <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.4s" }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+          <form onSubmit={handleContinue} className="chat-input-row">
+            <input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder={`Ask ${meta.label} a follow-up...`}
+              className="chat-input"
+              disabled={chatLoading}
+            />
+            <button
+              type="submit"
+              disabled={chatLoading || !chatInput.trim()}
+              className="chat-send-btn"
+              style={{ background: chatLoading || !chatInput.trim() ? "var(--border)" : meta.color }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
@@ -559,8 +701,51 @@ function BakeoffResults({
   const arb = result.arbitration;
   const winnerMeta = ENGINE_META[arb.bestEngine];
 
-  function iconForLabel(label: string) {
-    return engineIconForLabel(label, result.responses);
+  // Per-engine chat continuation state
+  const [chatState, setChatState] = useState<Record<string, {
+    open: boolean;
+    messages: { role: "user" | "assistant"; text: string }[];
+    input: string;
+    loading: boolean;
+  }>>({});
+  const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  function getChatState(eng: string) {
+    return chatState[eng] || { open: false, messages: [], input: "", loading: false };
+  }
+
+  function updateChatState(eng: string, patch: Partial<typeof chatState[string]>) {
+    setChatState(prev => ({ ...prev, [eng]: { ...getChatState(eng), ...patch } }));
+  }
+
+  async function handleContinue(eng: Engine, model: string, originalText: string, e: React.FormEvent) {
+    e.preventDefault();
+    const cs = getChatState(eng);
+    if (!cs.input.trim() || cs.loading) return;
+    const userMsg = cs.input.trim();
+    const newMessages = [...cs.messages, { role: "user" as const, text: userMsg }];
+    updateChatState(eng, { input: "", messages: newMessages, loading: true });
+    try {
+      const history = [
+        { role: "user" as const, content: `[Previous context: I asked a question and you responded with the following]\n\n${originalText}` },
+        ...newMessages.map(m => ({ role: m.role, content: m.text })),
+      ];
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ engine: eng, model, messages: history }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      updateChatState(eng, { messages: [...newMessages, { role: "assistant", text: data.text }], loading: false });
+    } catch {
+      updateChatState(eng, { messages: [...newMessages, { role: "assistant", text: "Sorry, something went wrong. Please try again." }], loading: false });
+    }
+    setTimeout(() => chatEndRefs.current[eng]?.scrollIntoView({ behavior: "smooth" }), 100);
+  }
+
+  function resolveLabel(label: string) {
+    return engineForLabel(label, result.responses);
   }
 
   return (
@@ -605,12 +790,7 @@ function BakeoffResults({
             <TrophyIcon size={13} color="#fff" />
             {winnerMeta.label}
           </span>
-          <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ background: winnerMeta.color, color: "#fff" }}
-          >
-            {winnerMeta.icon}
-          </span>
+          <EngineLogo engine={arb.bestEngine} size={26} />
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           {arb.bestRationale}
@@ -644,7 +824,7 @@ function BakeoffResults({
         </>
       )}
 
-      {/* Disagreements — engine icons instead of A/B/C circles */}
+      {/* Disagreements — engine logos instead of A/B/C circles */}
       {arb.disagreements.length > 0 && (
         <>
           <div className="mt-10 mb-3">
@@ -664,14 +844,13 @@ function BakeoffResults({
               </h4>
               <div className="space-y-2.5 mb-4">
                 {Object.entries(d.positions).map(([lbl, pos]) => {
-                  const em = iconForLabel(lbl);
+                  const em = resolveLabel(lbl);
                   return (
                     <div key={lbl} className="flex gap-3 text-sm">
-                      <span
-                        className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                        style={{ background: em.color, color: "#fff" }}
-                      >
-                        {em.icon}
+                      <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                        {em.engine ? <EngineLogo engine={em.engine} size={22} /> : (
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: em.color, color: "#fff" }}>{lbl}</span>
+                        )}
                       </span>
                       <span style={{ color: "var(--text-secondary)" }}>{pos}</span>
                     </div>
@@ -693,6 +872,7 @@ function BakeoffResults({
       {result.responses.map((r) => {
         const meta = ENGINE_META[r.engine];
         const isOpen = expandedEngines.has(r.engine);
+        const cs = getChatState(r.engine);
         return (
           <div key={r.engine} className="glass mb-4 overflow-hidden">
             <button
@@ -700,17 +880,14 @@ function BakeoffResults({
               className="accordion-trigger w-full p-5 flex items-center gap-3 text-left"
               style={{ cursor: "pointer" }}
             >
-              <span
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: meta.color, color: "#fff" }}
-              >
-                {meta.icon}
+              <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                <EngineLogo engine={r.engine} size={28} />
               </span>
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
-              <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+              <span className="text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
                 {r.model}
               </span>
-              <span className="ml-auto text-xs" style={{ color: "var(--text-tertiary)" }}>
+              <span className="ml-auto text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
                 {r.latencySeconds}s &middot; {r.inputTokens + r.outputTokens} tokens
               </span>
               <span
@@ -730,6 +907,65 @@ function BakeoffResults({
                 <div className="prose-response text-sm leading-relaxed pt-4">
                   <ReactMarkdown>{r.text}</ReactMarkdown>
                 </div>
+
+                {/* Continue Discussion */}
+                {!cs.open ? (
+                  <button
+                    onClick={() => updateChatState(r.engine, { open: true })}
+                    className="continue-btn mt-4"
+                    style={{ "--engine-color": meta.color } as React.CSSProperties}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Continue discussion with {meta.label}
+                  </button>
+                ) : (
+                  <div className="chat-continuation mt-4" style={{ borderColor: meta.color }}>
+                    {cs.messages.map((msg, i) => (
+                      <div key={i} className={`chat-msg ${msg.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}`}>
+                        {msg.role === "assistant" && (
+                          <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
+                        )}
+                        <div className={`chat-msg-bubble ${msg.role === "user" ? "chat-msg-bubble-user" : "chat-msg-bubble-assistant"}`}>
+                          {msg.role === "assistant" ? (
+                            <div className="prose-response text-sm leading-relaxed"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
+                          ) : (
+                            <p className="text-sm">{msg.text}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {cs.loading && (
+                      <div className="chat-msg chat-msg-assistant">
+                        <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
+                        <div className="chat-msg-bubble chat-msg-bubble-assistant">
+                          <div className="flex gap-1.5 py-1">
+                            <div className="pulse-dot" style={{ background: meta.color }} />
+                            <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.2s" }} />
+                            <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.4s" }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={el => { chatEndRefs.current[r.engine] = el; }} />
+                    <form onSubmit={(e) => handleContinue(r.engine, r.model, r.text, e)} className="chat-input-row">
+                      <input
+                        value={cs.input}
+                        onChange={(e) => updateChatState(r.engine, { input: e.target.value })}
+                        placeholder={`Ask ${meta.label} a follow-up...`}
+                        className="chat-input"
+                        disabled={cs.loading}
+                      />
+                      <button
+                        type="submit"
+                        disabled={cs.loading || !cs.input.trim()}
+                        className="chat-send-btn"
+                        style={{ background: cs.loading || !cs.input.trim() ? "var(--border)" : meta.color }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             )}
           </div>
