@@ -7,7 +7,8 @@ const client = new Anthropic();
 export async function queryClaude(
   prompt: string,
   speed: Speed,
-  length: Length
+  length: Length,
+  { webSearch = true }: { webSearch?: boolean } = {}
 ): Promise<ProviderResponse> {
   const model = MODEL_MAP.claude[speed];
   const preset = LENGTH_PRESETS[length];
@@ -18,7 +19,7 @@ export async function queryClaude(
     max_tokens: preset.maxTokens,
     system: preset.systemInstruction,
     messages: [{ role: "user", content: prompt }],
-    tools: [{ type: "web_search_20250305", name: "web_search" }],
+    ...(webSearch && { tools: [{ type: "web_search_20250305" as const, name: "web_search" }] }),
   });
   const latency = (performance.now() - t0) / 1000;
 

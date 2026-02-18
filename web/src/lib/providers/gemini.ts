@@ -10,7 +10,8 @@ const THINKING_BUDGET = 128;
 export async function queryGemini(
   prompt: string,
   speed: Speed,
-  length: Length
+  length: Length,
+  { webSearch = true }: { webSearch?: boolean } = {}
 ): Promise<ProviderResponse> {
   const modelName = MODEL_MAP.gemini[speed];
   const preset = LENGTH_PRESETS[length];
@@ -28,7 +29,7 @@ export async function queryGemini(
       ...(isThinkingModel && {
         thinkingConfig: { thinkingBudget: THINKING_BUDGET },
       }),
-      tools: [{ googleSearch: {} }],
+      ...(webSearch && { tools: [{ googleSearch: {} }] }),
     },
   });
   const latency = (performance.now() - t0) / 1000;

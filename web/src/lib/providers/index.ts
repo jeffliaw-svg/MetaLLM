@@ -6,15 +6,21 @@ import type { ProviderResponse } from "./types";
 
 export type { ProviderResponse };
 
-const QUERY_FNS: Record<
-  Engine,
-  (prompt: string, speed: Speed, length: Length) => Promise<ProviderResponse>
-> = {
+export type QueryOptions = { webSearch?: boolean };
+
+type QueryFn = (
+  prompt: string,
+  speed: Speed,
+  length: Length,
+  options?: QueryOptions,
+) => Promise<ProviderResponse>;
+
+const QUERY_FNS: Record<Engine, QueryFn> = {
   claude: queryClaude,
   gemini: queryGemini,
   chatgpt: queryChatGPT,
 };
 
-export function getQueryFn(engine: Engine) {
+export function getQueryFn(engine: Engine): QueryFn {
   return QUERY_FNS[engine];
 }
