@@ -71,6 +71,21 @@ function engineIconForLabel(
   return { icon: label, color: "var(--border)" };
 }
 
+/* ── Trophy icon ────────────────────────────────────────────────────── */
+
+function TrophyIcon({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  );
+}
+
 /* ── Page ───────────────────────────────────────────────────────────── */
 
 export default function Home() {
@@ -178,7 +193,7 @@ export default function Home() {
         lines.push("## Synthesised Answer", "", arb.synthesis, "");
       }
       const bestMeta = ENGINE_META[arb.bestEngine];
-      lines.push(`## Arbiter Verdict`, "", `**Best: ${bestMeta.label}** — ${arb.bestRationale}`, "");
+      lines.push(`## Bake-Off Winner`, "", `**Best: ${bestMeta.label}** — ${arb.bestRationale}`, "");
       if (arb.consensus.length > 0) {
         lines.push("## Consensus", "");
         arb.consensus.forEach((p) => lines.push(`- ${p}`));
@@ -222,8 +237,8 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="pt-12 pb-6 px-6 text-center">
-        <h1 className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em" }}>
+      <header className="pt-14 pb-8 px-6 text-center">
+        <h1 className="text-4xl font-extrabold tracking-tight" style={{ letterSpacing: "-0.04em" }}>
           Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
@@ -232,7 +247,7 @@ export default function Home() {
       </header>
 
       {/* ── Main content ────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-6 pb-16">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-6 pb-24">
 
         {/* ── Controls ────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
@@ -393,8 +408,8 @@ export default function Home() {
         {/* ── Error ─────────────────────────────────────────────── */}
         {error && (
           <div
-            className="glass p-5 fade-in-up"
-            style={{ borderColor: "var(--accent-rose)" }}
+            className="glass card-accent p-5 fade-in-up"
+            style={{ borderLeftColor: "var(--accent-rose)" }}
           >
             <p className="text-sm" style={{ color: "var(--accent-rose)" }}>
               {error}
@@ -405,38 +420,6 @@ export default function Home() {
         {/* ── Results ───────────────────────────────────────────── */}
         {result && !loading && (
           <>
-            {/* Action bar: copy + share */}
-            <div className="flex items-center gap-3 mb-4 fade-in-up">
-              <button
-                onClick={handleCopy}
-                className="px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
-                style={{
-                  background: copied && !shareUrl ? "var(--accent-green)" : "var(--bg-input)",
-                  color: copied && !shareUrl ? "#fff" : "var(--text-secondary)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {copied && !shareUrl ? "Copied!" : "Copy results"}
-              </button>
-              {saving && (
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                  Saving...
-                </span>
-              )}
-              {shareUrl && (
-                <button
-                  onClick={handleCopyShareUrl}
-                  className="px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
-                  style={{
-                    background: copied ? "var(--accent-green)" : "var(--accent-blue)",
-                    color: "#fff",
-                  }}
-                >
-                  {copied ? "Link copied!" : "Copy share link"}
-                </button>
-              )}
-            </div>
-
             <div className="stagger">
               {result.kind === "single" ? (
                 <ResponseCard response={result.response} />
@@ -447,6 +430,53 @@ export default function Home() {
                   onToggle={toggleEngine}
                 />
               )}
+            </div>
+
+            {/* Floating action bar — outside all cards */}
+            <div className="flex justify-center mt-8 fade-in-up">
+              <div className="action-bar flex items-center gap-2 px-4 py-2">
+                <button
+                  onClick={handleCopy}
+                  className="px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2"
+                  style={{
+                    background: copied && !shareUrl ? "var(--accent-green)" : "transparent",
+                    color: copied && !shareUrl ? "#fff" : "var(--text-secondary)",
+                  }}
+                >
+                  {copied && !shareUrl ? (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      Copy results
+                    </>
+                  )}
+                </button>
+                {saving && (
+                  <span className="text-xs px-2" style={{ color: "var(--text-tertiary)" }}>
+                    Saving...
+                  </span>
+                )}
+                {shareUrl && (
+                  <>
+                    <div className="w-px h-5" style={{ background: "var(--border)" }} />
+                    <button
+                      onClick={handleCopyShareUrl}
+                      className="px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2"
+                      style={{
+                        background: copied ? "var(--accent-green)" : "var(--accent-blue)",
+                        color: "#fff",
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                      {copied ? "Link copied!" : "Share link"}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -501,15 +531,21 @@ function SettingSelect({
 function ResponseCard({ response }: { response: ProviderResponse }) {
   const meta = ENGINE_META[response.engine];
   return (
-    <div className="glass p-6 mb-4">
+    <div
+      className="glass card-accent p-6 mb-4"
+      style={{
+        borderLeftColor: meta.color,
+        background: `linear-gradient(135deg, ${meta.color}06 0%, var(--bg-card) 40%)`,
+      }}
+    >
       <div className="flex items-center gap-3 mb-4">
         <span
-          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
           style={{ background: meta.color, color: "#fff" }}
         >
           {meta.icon}
         </span>
-        <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
           {response.model}
         </span>
@@ -537,6 +573,7 @@ function BakeoffResults({
   onToggle: (engine: string) => void;
 }) {
   const arb = result.arbitration;
+  const winnerMeta = ENGINE_META[arb.bestEngine];
 
   function iconForLabel(label: string) {
     return engineIconForLabel(label, result.responses);
@@ -547,10 +584,16 @@ function BakeoffResults({
       {/* Synthesis first */}
       {arb.synthesis && (
         <>
-          <div className="mb-2">
+          <div className="mb-3">
             <SectionLabel>Synthesised Answer</SectionLabel>
           </div>
-          <div className="glass p-6 mb-4" style={{ borderColor: "var(--accent-purple)" }}>
+          <div
+            className="glass card-accent p-6 mb-6"
+            style={{
+              borderLeftColor: "var(--accent-purple)",
+              background: `linear-gradient(135deg, rgba(175, 82, 222, 0.04) 0%, var(--bg-card) 40%)`,
+            }}
+          >
             <div className="prose-response text-sm leading-relaxed">
               <ReactMarkdown>{arb.synthesis}</ReactMarkdown>
             </div>
@@ -558,20 +601,31 @@ function BakeoffResults({
         </>
       )}
 
-      {/* Verdict — now shows engine icon instead of A/B/C */}
-      <div className="mt-8 mb-2">
-        <SectionLabel>Arbiter Verdict</SectionLabel>
+      {/* Bake-Off Winner */}
+      <div className="mt-10 mb-3">
+        <SectionLabel>Bake-Off Winner</SectionLabel>
       </div>
-      <div className="glass p-6 mb-4" style={{ borderColor: "var(--accent-green)" }}>
+      <div
+        className="glass card-accent p-6 mb-6"
+        style={{
+          borderLeftColor: winnerMeta.color,
+          background: `linear-gradient(135deg, ${winnerMeta.color}08 0%, var(--bg-card) 50%)`,
+          boxShadow: `0 2px 16px ${winnerMeta.color}12, 0 1px 3px rgba(0, 0, 0, 0.06)`,
+        }}
+      >
         <div className="flex items-center gap-3 mb-3">
           <span
-            className="px-3 py-1 rounded-full text-xs font-bold"
-            style={{ background: "var(--accent-green)", color: "#fff" }}
+            className="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5"
+            style={{ background: winnerMeta.color, color: "#fff" }}
           >
-            Best: {ENGINE_META[arb.bestEngine].icon}
+            <TrophyIcon size={13} color="#fff" />
+            {winnerMeta.label}
           </span>
-          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-            {ENGINE_META[arb.bestEngine].label}
+          <span
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+            style={{ background: winnerMeta.color, color: "#fff" }}
+          >
+            {winnerMeta.icon}
           </span>
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -582,14 +636,22 @@ function BakeoffResults({
       {/* Consensus */}
       {arb.consensus.length > 0 && (
         <>
-          <div className="mt-8 mb-2">
+          <div className="mt-10 mb-3">
             <SectionLabel>Consensus</SectionLabel>
           </div>
-          <div className="glass p-6 mb-4">
-            <ul className="space-y-2">
+          <div
+            className="glass card-accent p-6 mb-6"
+            style={{
+              borderLeftColor: "var(--accent-green)",
+              background: `linear-gradient(135deg, rgba(52, 199, 89, 0.03) 0%, var(--bg-card) 40%)`,
+            }}
+          >
+            <ul className="space-y-3">
               {arb.consensus.map((point, i) => (
                 <li key={i} className="flex gap-3 text-sm" style={{ color: "var(--text-secondary)" }}>
-                  <span style={{ color: "var(--accent-green)" }}>&#10003;</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: "rgba(52, 199, 89, 0.12)", color: "var(--accent-green)" }}>
+                    &#10003;
+                  </span>
                   {point}
                 </li>
               ))}
@@ -601,15 +663,22 @@ function BakeoffResults({
       {/* Disagreements — engine icons instead of A/B/C circles */}
       {arb.disagreements.length > 0 && (
         <>
-          <div className="mt-8 mb-2">
+          <div className="mt-10 mb-3">
             <SectionLabel>Disagreements</SectionLabel>
           </div>
           {arb.disagreements.map((d, i) => (
-            <div key={i} className="glass p-6 mb-4">
-              <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--accent-amber)" }}>
+            <div
+              key={i}
+              className="glass card-accent p-6 mb-4"
+              style={{
+                borderLeftColor: "var(--accent-amber)",
+                background: `linear-gradient(135deg, rgba(255, 159, 10, 0.03) 0%, var(--bg-card) 40%)`,
+              }}
+            >
+              <h4 className="text-sm font-bold mb-3" style={{ color: "var(--accent-amber)" }}>
                 {d.topic}
               </h4>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2.5 mb-4">
                 {Object.entries(d.positions).map(([lbl, pos]) => {
                   const em = iconForLabel(lbl);
                   return (
@@ -634,7 +703,7 @@ function BakeoffResults({
       )}
 
       {/* Individual responses — collapsible, hidden by default */}
-      <div className="mt-8 mb-2">
+      <div className="mt-10 mb-3">
         <SectionLabel>Individual Responses</SectionLabel>
       </div>
       {result.responses.map((r) => {
@@ -644,16 +713,16 @@ function BakeoffResults({
           <div key={r.engine} className="glass mb-4 overflow-hidden">
             <button
               onClick={() => onToggle(r.engine)}
-              className="w-full p-6 flex items-center gap-3 text-left"
+              className="accordion-trigger w-full p-5 flex items-center gap-3 text-left"
               style={{ cursor: "pointer" }}
             >
               <span
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
                 style={{ background: meta.color, color: "#fff" }}
               >
                 {meta.icon}
               </span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
               <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                 {r.model}
               </span>
@@ -673,8 +742,8 @@ function BakeoffResults({
               </span>
             </button>
             {isOpen && (
-              <div className="px-6 pb-6">
-                <div className="prose-response text-sm leading-relaxed">
+              <div className="px-6 pb-6" style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="prose-response text-sm leading-relaxed pt-4">
                   <ReactMarkdown>{r.text}</ReactMarkdown>
                 </div>
               </div>
@@ -690,14 +759,17 @@ function BakeoffResults({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
-      <span
-        className="text-xs font-semibold uppercase tracking-widest"
-        style={{ color: "var(--text-tertiary)" }}
+    <div className="flex items-center gap-4">
+      <h3
+        className="text-base font-bold tracking-tight flex-shrink-0"
+        style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
       >
         {children}
-      </span>
-      <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+      </h3>
+      <div
+        className="flex-1 h-px"
+        style={{ background: "linear-gradient(90deg, var(--border), transparent)" }}
+      />
     </div>
   );
 }
