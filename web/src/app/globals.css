@@ -86,7 +86,7 @@ body {
   gap: 8px;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 600px) {
   .engine-grid {
     grid-template-columns: 1fr;
   }
