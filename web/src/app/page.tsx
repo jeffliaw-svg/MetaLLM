@@ -57,6 +57,21 @@ const ENGINE_META: Record<Engine, { label: string; color: string; icon: string }
   chatgpt: { label: "ChatGPT", color: "#ff9f0a", icon: "O" },
 };
 
+const ENGINES: Engine[] = ["claude", "gemini", "chatgpt"];
+
+const SPEED_OPTIONS: { value: Speed; label: string }[] = [
+  { value: "fast", label: "Fast" },
+  { value: "moderate", label: "Moderate" },
+  { value: "research", label: "Research" },
+];
+
+const LENGTH_OPTIONS: { value: Length; label: string }[] = [
+  { value: "brief", label: "Brief" },
+  { value: "moderate", label: "Moderate" },
+  { value: "detailed", label: "Detailed" },
+  { value: "research", label: "Research" },
+];
+
 const RESPONSE_LABELS = ["A", "B", "C"];
 
 /** Map arbiter's anonymous A/B/C label to the actual engine's icon & color. */
@@ -237,112 +252,122 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="pt-14 pb-8 px-6 text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight" style={{ letterSpacing: "-0.04em" }}>
+      <header className="pt-12 pb-6 px-6 text-center">
+        <h1 className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
           Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
         </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Multi-AI arbitration engine
+        <p className="mt-1.5 text-sm font-medium" style={{ color: "var(--text-tertiary)", letterSpacing: "0.01em" }}>
+          Claude vs. Gemini vs. ChatGPT
         </p>
       </header>
 
       {/* ── Main content ────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-6 pb-24">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-6 pb-24">
 
         {/* ── Controls ────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
-          <div className="glass p-6 mb-6">
+          <div className="glass p-5 mb-5">
 
             {/* Mode toggle */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-                Mode
-              </span>
-              <div className="flex rounded-lg" style={{ background: "var(--bg-input)", padding: "3px" }}>
+            <div className="flex items-center gap-3 mb-5">
+              <span className="setting-label">Mode</span>
+              <div className="segmented-control">
                 <button
                   type="button"
                   onClick={() => setMode("single")}
-                  className="px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    background: mode === "single" ? "var(--accent-blue)" : "transparent",
-                    color: mode === "single" ? "#fff" : "var(--text-secondary)",
-                    borderRadius: "6px",
-                  }}
+                  className={`segmented-option ${mode === "single" ? "segmented-active" : ""}`}
                 >
                   Single Engine
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode("bakeoff")}
-                  className="px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    background: mode === "bakeoff" ? "var(--accent-blue)" : "transparent",
-                    color: mode === "bakeoff" ? "#fff" : "var(--text-secondary)",
-                    borderRadius: "6px",
-                  }}
+                  className={`segmented-option ${mode === "bakeoff" ? "segmented-active" : ""}`}
                 >
                   Bake-off
                 </button>
               </div>
             </div>
 
-            {/* Settings row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-              <SettingSelect
-                label="Speed"
-                value={speed}
-                onChange={(v) => setSpeed(v as Speed)}
-                options={[
-                  { value: "fast", label: "Fast" },
-                  { value: "moderate", label: "Moderate" },
-                  { value: "research", label: "Research" },
-                ]}
-              />
-              <SettingSelect
-                label="Length"
-                value={length}
-                onChange={(v) => setLength(v as Length)}
-                options={[
-                  { value: "quick", label: "Quick" },
-                  { value: "moderate", label: "Moderate" },
-                  { value: "detailed", label: "Detailed" },
-                  { value: "research", label: "Research" },
-                  { value: "memo", label: "Memo" },
-                ]}
-              />
-              {mode === "single" ? (
-                <SettingSelect
-                  label="Engine"
-                  value={engine}
-                  onChange={(v) => setEngine(v as Engine)}
-                  options={[
-                    { value: "claude", label: "Claude" },
-                    { value: "gemini", label: "Gemini" },
-                    { value: "chatgpt", label: "ChatGPT" },
-                  ]}
-                />
-              ) : (
-                <SettingSelect
-                  label="Arbiter"
-                  value={arbiter}
-                  onChange={(v) => setArbiter(v as Engine)}
-                  options={[
-                    { value: "claude", label: "Claude" },
-                    { value: "gemini", label: "Gemini" },
-                    { value: "chatgpt", label: "ChatGPT" },
-                  ]}
-                />
-              )}
+            {/* Settings row — segmented bars */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+              <div>
+                <span className="setting-label mb-2 block">Speed</span>
+                <div className="segmented-control segmented-control-full">
+                  {SPEED_OPTIONS.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => setSpeed(o.value)}
+                      className={`segmented-option ${speed === o.value ? "segmented-active" : ""}`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="setting-label mb-2 block">Response Length</span>
+                <div className="segmented-control segmented-control-full">
+                  {LENGTH_OPTIONS.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => setLength(o.value)}
+                      className={`segmented-option ${length === o.value ? "segmented-active" : ""}`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Engine / Arbiter selection */}
+            <div className="mb-5">
+              <span className="setting-label mb-2 block">
+                {mode === "single" ? "Engine" : "Arbiter"}
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {ENGINES.map((eng) => {
+                  const meta = ENGINE_META[eng];
+                  const isSelected = mode === "single" ? engine === eng : arbiter === eng;
+                  return (
+                    <button
+                      key={eng}
+                      type="button"
+                      onClick={() =>
+                        mode === "single" ? setEngine(eng) : setArbiter(eng)
+                      }
+                      className={`engine-card ${isSelected ? "engine-card-active" : ""}`}
+                      style={{
+                        "--engine-color": meta.color,
+                      } as React.CSSProperties}
+                    >
+                      <span className="engine-radio">
+                        {isSelected && <span className="engine-radio-dot" style={{ background: meta.color }} />}
+                      </span>
+                      <span
+                        className="engine-icon"
+                        style={{ background: meta.color }}
+                      >
+                        {meta.icon}
+                      </span>
+                      <span className="engine-name">{meta.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Prompt input */}
-            <div className="relative">
+            <div>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Ask anything..."
                 rows={3}
-                className="w-full rounded-xl px-5 py-4 text-sm leading-relaxed"
+                className="w-full rounded-xl px-4 py-3.5 text-sm leading-relaxed"
                 style={{
                   background: "var(--bg-input)",
                   border: "1px solid var(--border)",
@@ -354,18 +379,18 @@ export default function Home() {
                   }
                 }}
               />
-              <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center justify-between mt-2.5">
                 <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   {mode === "bakeoff"
-                    ? `Querying all 3 engines \u00b7 ${arbiter} arbitrates`
-                    : `Querying ${engine}`}
+                    ? `All 3 engines \u00b7 ${ENGINE_META[arbiter].label} arbitrates`
+                    : `${ENGINE_META[engine].label}`}
                   {" \u00b7 "}
-                  {speed} speed &middot; {length} length
+                  {speed} &middot; {length}
                 </span>
                 <button
                   type="submit"
                   disabled={loading || !prompt.trim()}
-                  className="px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2"
+                  className="submit-btn flex items-center gap-2"
                   style={{
                     background: loading || !prompt.trim() ? "var(--border)" : "var(--accent-blue)",
                     color: loading || !prompt.trim() ? "var(--text-tertiary)" : "#fff",
@@ -380,7 +405,7 @@ export default function Home() {
                   ) : (
                     <>
                       Run
-                      <span style={{ opacity: 0.5, fontSize: "0.75rem" }}>&thinsp;&#8984;&#9166;</span>
+                      <span style={{ opacity: 0.5, fontSize: "0.7rem" }}>&thinsp;&#8984;&#9166;</span>
                     </>
                   )}
                 </button>
@@ -393,9 +418,9 @@ export default function Home() {
         {loading && (
           <div className="glass p-8 flex flex-col items-center justify-center gap-4 fade-in-up">
             <div className="flex gap-2">
-              <div className="pulse-dot" style={{ background: "var(--accent-blue)" }} />
-              <div className="pulse-dot" style={{ background: "var(--accent-green)" }} />
-              <div className="pulse-dot" style={{ background: "var(--accent-amber)" }} />
+              <div className="pulse-dot" style={{ background: ENGINE_META.claude.color }} />
+              <div className="pulse-dot" style={{ background: ENGINE_META.gemini.color }} />
+              <div className="pulse-dot" style={{ background: ENGINE_META.chatgpt.color }} />
             </div>
             <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
               {mode === "bakeoff"
@@ -481,47 +506,6 @@ export default function Home() {
           </>
         )}
       </main>
-    </div>
-  );
-}
-
-/* ── Setting Select ─────────────────────────────────────────────────── */
-
-function SettingSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <div>
-      <label
-        className="block text-xs font-medium uppercase tracking-wider mb-2"
-        style={{ color: "var(--text-tertiary)" }}
-      >
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg px-3 py-2.5 text-sm"
-        style={{
-          background: "var(--bg-input)",
-          border: "1px solid var(--border)",
-          color: "var(--text-primary)",
-        }}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }

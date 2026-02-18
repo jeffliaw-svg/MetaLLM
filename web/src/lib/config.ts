@@ -2,7 +2,7 @@
 
 export type Mode = "single" | "bakeoff";
 export type Speed = "fast" | "moderate" | "research";
-export type Length = "quick" | "moderate" | "detailed" | "research" | "memo";
+export type Length = "brief" | "moderate" | "detailed" | "research";
 export type Engine = "claude" | "gemini" | "chatgpt";
 
 export interface LengthPreset {
@@ -29,7 +29,7 @@ export const MODEL_MAP: Record<Engine, Record<Speed, string>> = {
 };
 
 export const LENGTH_PRESETS: Record<Length, LengthPreset> = {
-  quick: {
+  brief: {
     maxTokens: 200,
     systemInstruction: "Answer in 1-2 sentences. Be direct and concise.",
   },
@@ -46,11 +46,6 @@ export const LENGTH_PRESETS: Record<Length, LengthPreset> = {
     maxTokens: 4000,
     systemInstruction:
       "Provide comprehensive analysis. Include evidence, multiple perspectives, and citations where possible.",
-  },
-  memo: {
-    maxTokens: 8000,
-    systemInstruction:
-      "Write a structured memo with an executive summary, analysis sections, supporting evidence, and actionable recommendations.",
   },
 };
 
