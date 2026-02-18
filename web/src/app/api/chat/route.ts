@@ -24,7 +24,7 @@ const openai = new OpenAI();
 async function chatClaude(model: string, messages: ChatMessage[]): Promise<string> {
   const result = await anthropic.messages.create({
     model,
-    max_tokens: 1500,
+    max_tokens: 4096,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     tools: [{ type: "web_search_20250305", name: "web_search" }],
   });

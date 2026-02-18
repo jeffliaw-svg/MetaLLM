@@ -2,12 +2,14 @@
 
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import type {
-  Engine,
-  Length,
-  Mode,
-  QueryRequest,
-  Speed,
+import {
+  LENGTH_PRESETS,
+  MODEL_MAP,
+  type Engine,
+  type Length,
+  type Mode,
+  type QueryRequest,
+  type Speed,
 } from "@/lib/config";
 
 /* ── Type mirrors of the API response ───────────────────────────────── */
@@ -105,6 +107,10 @@ const SPEED_OPTIONS: { value: Speed; label: string }[] = [
   { value: "moderate", label: "Moderate" },
   { value: "research", label: "Research" },
 ];
+
+function speedTooltip(s: Speed): string {
+  return `Claude: ${MODEL_MAP.claude[s]}\nGemini: ${MODEL_MAP.gemini[s]}\nChatGPT: ${MODEL_MAP.chatgpt[s]}`;
+}
 
 const LENGTH_OPTIONS: { value: Length; label: string }[] = [
   { value: "brief", label: "Brief" },
@@ -350,6 +356,7 @@ export default function Home() {
                       type="button"
                       onClick={() => setSpeed(o.value)}
                       className={`segmented-option ${speed === o.value ? "segmented-active" : ""}`}
+                      title={speedTooltip(o.value)}
                     >
                       {o.label}
                     </button>
@@ -365,6 +372,7 @@ export default function Home() {
                       type="button"
                       onClick={() => setLength(o.value)}
                       className={`segmented-option ${length === o.value ? "segmented-active" : ""}`}
+                      title={`Max tokens: ${LENGTH_PRESETS[o.value].maxTokens}`}
                     >
                       {o.label}
                     </button>

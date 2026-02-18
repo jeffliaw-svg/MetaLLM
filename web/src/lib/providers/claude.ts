@@ -13,10 +13,16 @@ export async function queryClaude(
   const model = MODEL_MAP.claude[speed];
   const preset = LENGTH_PRESETS[length];
 
+  // When web search is enabled the model's tool_use blocks count toward
+  // max_tokens.  Anthropic recommends ≥ 4096 so the model has headroom
+  // for search calls + the final text response.  The system instruction
+  // still controls actual response length.
+  const maxTokens = webSearch ? Math.max(preset.maxTokens, 4096) : preset.maxTokens;
+
   const t0 = performance.now();
   const message = await client.messages.create({
     model,
-    max_tokens: preset.maxTokens,
+    max_tokens: maxTokens,
     system: preset.systemInstruction,
     messages: [{ role: "user", content: prompt }],
     ...(webSearch && { tools: [{ type: "web_search_20250305" as const, name: "web_search" }] }),
