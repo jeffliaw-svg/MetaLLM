@@ -2,7 +2,11 @@ import { GoogleGenAI } from "@google/genai";
 import { LENGTH_PRESETS, MODEL_MAP, type Length, type Speed } from "../config";
 import type { ProviderResponse } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
+let _ai: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!_ai) _ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
+  return _ai;
+}
 
 /** Minimum thinking budget for gemini-2.5-pro (thinking can't be disabled). */
 const THINKING_BUDGET = 128;
@@ -33,7 +37,7 @@ export async function queryGemini(
     : preset.systemInstruction;
 
   const t0 = performance.now();
-  const result = await ai.models.generateContent({
+  const result = await getAI().models.generateContent({
     model: modelName,
     contents: prompt,
     config: {

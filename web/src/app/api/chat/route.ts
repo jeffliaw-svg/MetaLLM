@@ -17,15 +17,27 @@ interface ChatRequest {
   messages: ChatMessage[];
 }
 
-const anthropic = new Anthropic();
-const genai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
-const openai = new OpenAI();
+let _anthropic: Anthropic | null = null;
+let _genai: GoogleGenAI | null = null;
+let _openai: OpenAI | null = null;
+function getAnthropic(): Anthropic {
+  if (!_anthropic) _anthropic = new Anthropic();
+  return _anthropic;
+}
+function getGenAI(): GoogleGenAI {
+  if (!_genai) _genai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
+  return _genai;
+}
+function getOpenAI(): OpenAI {
+  if (!_openai) _openai = new OpenAI();
+  return _openai;
+}
 
 const SEARCH_INSTRUCTION =
   "\n\nYou have access to a web search tool. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.";
 
 async function chatClaude(model: string, messages: ChatMessage[]): Promise<string> {
-  const result = await anthropic.messages.create({
+  const result = await getAnthropic().messages.create({
     model,
     max_tokens: 4096,
     system: SEARCH_INSTRUCTION.trim(),
@@ -60,7 +72,7 @@ async function chatGemini(model: string, messages: ChatMessage[]): Promise<strin
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
   }));
-  const result = await genai.models.generateContent({
+  const result = await getGenAI().models.generateContent({
     model,
     contents,
     config: {
@@ -80,7 +92,7 @@ async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<stri
     role: m.role as "user" | "assistant",
     content: m.content,
   }));
-  const result = await openai.responses.create({
+  const result = await getOpenAI().responses.create({
     model,
     instructions: SEARCH_INSTRUCTION.trim(),
     input,

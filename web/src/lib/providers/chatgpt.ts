@@ -2,7 +2,11 @@ import OpenAI from "openai";
 import { LENGTH_PRESETS, MODEL_MAP, type Length, type Speed } from "../config";
 import type { ProviderResponse } from "./types";
 
-const client = new OpenAI();
+let _client: OpenAI | null = null;
+function getClient(): OpenAI {
+  if (!_client) _client = new OpenAI();
+  return _client;
+}
 
 export async function queryChatGPT(
   prompt: string,
@@ -24,7 +28,7 @@ export async function queryChatGPT(
     : preset.systemInstruction;
 
   const t0 = performance.now();
-  const response = await client.responses.create({
+  const response = await getClient().responses.create({
     model,
     instructions,
     input: prompt,
