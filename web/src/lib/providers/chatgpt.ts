@@ -13,13 +13,19 @@ export async function queryChatGPT(
   const model = MODEL_MAP.chatgpt[speed];
   const preset = LENGTH_PRESETS[length];
 
+  // When web search is enabled the model needs headroom for internal search
+  // tool calls + the final answer.  Floor at 4096 (same approach as Claude).
+  const maxOutputTokens = webSearch
+    ? Math.max(preset.maxTokens, 4096)
+    : preset.maxTokens;
+
   const t0 = performance.now();
   const response = await client.responses.create({
     model,
     instructions: preset.systemInstruction,
     input: prompt,
     ...(webSearch && { tools: [{ type: "web_search_preview" as const }] }),
-    max_output_tokens: preset.maxTokens,
+    max_output_tokens: maxOutputTokens,
   });
   const latency = (performance.now() - t0) / 1000;
 

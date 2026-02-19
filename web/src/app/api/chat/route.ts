@@ -44,7 +44,7 @@ async function chatGemini(model: string, messages: ChatMessage[]): Promise<strin
     model,
     contents,
     config: {
-      maxOutputTokens: isThinkingModel ? 1628 : 1500,
+      maxOutputTokens: isThinkingModel ? 4096 + 128 : 4096,
       ...(isThinkingModel && {
         thinkingConfig: { thinkingBudget: 128 },
       }),
@@ -63,7 +63,7 @@ async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<stri
     model,
     input,
     tools: [{ type: "web_search_preview" }],
-    max_output_tokens: 1500,
+    max_output_tokens: 4096,
   });
   return result.output_text ?? "";
 }
