@@ -31,7 +31,11 @@ export async function queryClaude(
     max_tokens: maxTokens,
     system: systemInstruction,
     messages: [{ role: "user", content: prompt }],
-    ...(webSearch && { tools: [{ type: "web_search_20250305" as const, name: "web_search" }] }),
+    ...(webSearch && {
+      tools: [{ type: "web_search_20250305" as const, name: "web_search" }],
+      // Force the model to use web search rather than letting it decide
+      tool_choice: { type: "tool" as const, name: "web_search" },
+    }),
   });
   const latency = (performance.now() - t0) / 1000;
 

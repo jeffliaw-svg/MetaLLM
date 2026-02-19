@@ -43,6 +43,7 @@ async function chatClaude(model: string, messages: ChatMessage[]): Promise<strin
     system: SEARCH_INSTRUCTION.trim(),
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     tools: [{ type: "web_search_20250305", name: "web_search" }],
+    tool_choice: { type: "tool", name: "web_search" },
   });
   const textBlocks = result.content.filter((b) => b.type === "text");
   const text = textBlocks.map((b: any) => b.text).join("");
@@ -97,6 +98,7 @@ async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<stri
     instructions: SEARCH_INSTRUCTION.trim(),
     input,
     tools: [{ type: "web_search_preview" }],
+    tool_choice: { type: "web_search_preview" },
     max_output_tokens: 4096,
   });
   return result.output_text ?? "";
