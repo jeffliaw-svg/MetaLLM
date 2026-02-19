@@ -18,7 +18,7 @@ export async function queryGemini(
   prompt: string,
   speed: Speed,
   length: Length,
-  { webSearch = true }: { webSearch?: boolean } = {}
+  { webSearch = true, systemOverride }: { webSearch?: boolean; systemOverride?: string } = {}
 ): Promise<ProviderResponse> {
   const modelName = MODEL_MAP.gemini[speed];
   const preset = LENGTH_PRESETS[length];
@@ -32,9 +32,11 @@ export async function queryGemini(
     ? baseTokens + thinkingBudget
     : baseTokens;
 
-  const systemInstruction = webSearch
-    ? `${preset.systemInstruction}\n\nYou have access to Google Search. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.`
-    : preset.systemInstruction;
+  const systemInstruction = systemOverride
+    ? systemOverride
+    : webSearch
+      ? `${preset.systemInstruction}\n\nYou have access to Google Search. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.`
+      : preset.systemInstruction;
 
   const t0 = performance.now();
   const result = await getAI().models.generateContent({
