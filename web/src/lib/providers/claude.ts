@@ -2,7 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { LENGTH_PRESETS, MODEL_MAP, type Length, type Speed } from "../config";
 import type { ProviderResponse } from "./types";
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 export async function queryClaude(
   prompt: string,
@@ -20,7 +24,7 @@ export async function queryClaude(
     : preset.systemInstruction;
 
   const t0 = performance.now();
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model,
     max_tokens: maxTokens,
     system: systemInstruction,
