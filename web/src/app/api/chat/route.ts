@@ -21,21 +21,41 @@ const anthropic = new Anthropic();
 const genai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
 const openai = new OpenAI();
 
+const SEARCH_INSTRUCTION =
+  "\n\nYou have access to a web search tool. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.";
+
 async function chatClaude(model: string, messages: ChatMessage[]): Promise<string> {
   const result = await anthropic.messages.create({
     model,
     max_tokens: 4096,
+    system: SEARCH_INSTRUCTION.trim(),
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     tools: [{ type: "web_search_20250305", name: "web_search" }],
   });
-  return result.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("");
+  const textBlocks = result.content.filter((b) => b.type === "text");
+  const text = textBlocks.map((b: any) => b.text).join("");
+
+  // Extract web search citations
+  const citations: Array<{ url: string; title: string }> = [];
+  for (const block of textBlocks) {
+    const b = block as any;
+    if (b.citations) {
+      for (const cite of b.citations) {
+        if (cite.type === "web_search_result_location" && cite.url) {
+          citations.push({ url: cite.url, title: cite.title ?? "" });
+        }
+      }
+    }
+  }
+  const unique = [...new Map(citations.map((c) => [c.url, c])).values()];
+  return unique.length > 0
+    ? text + "\n\n**Sources:**\n" + unique.map((c) => `- [${c.title}](${c.url})`).join("\n")
+    : text;
 }
 
 async function chatGemini(model: string, messages: ChatMessage[]): Promise<string> {
   const isThinkingModel = model.includes("2.5");
+  const thinkingBudget = isThinkingModel ? 1024 : undefined;
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
@@ -44,9 +64,10 @@ async function chatGemini(model: string, messages: ChatMessage[]): Promise<strin
     model,
     contents,
     config: {
-      maxOutputTokens: isThinkingModel ? 4096 + 128 : 4096,
+      maxOutputTokens: isThinkingModel ? 4096 + (thinkingBudget ?? 0) : 4096,
+      systemInstruction: SEARCH_INSTRUCTION.replace("a web search tool", "Google Search").trim(),
       ...(isThinkingModel && {
-        thinkingConfig: { thinkingBudget: 128 },
+        thinkingConfig: { thinkingBudget: thinkingBudget! },
       }),
       tools: [{ googleSearch: {} }],
     },
@@ -61,6 +82,7 @@ async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<stri
   }));
   const result = await openai.responses.create({
     model,
+    instructions: SEARCH_INSTRUCTION.trim(),
     input,
     tools: [{ type: "web_search_preview" }],
     max_output_tokens: 4096,

@@ -19,10 +19,14 @@ export async function queryChatGPT(
     ? Math.max(preset.maxTokens, 4096)
     : preset.maxTokens;
 
+  const instructions = webSearch
+    ? `${preset.systemInstruction}\n\nYou have access to a web search tool. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.`
+    : preset.systemInstruction;
+
   const t0 = performance.now();
   const response = await client.responses.create({
     model,
-    instructions: preset.systemInstruction,
+    instructions,
     input: prompt,
     ...(webSearch && { tools: [{ type: "web_search_preview" as const }] }),
     max_output_tokens: maxOutputTokens,
