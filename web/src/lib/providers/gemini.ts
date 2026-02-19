@@ -17,14 +17,22 @@ export async function queryGemini(
   const preset = LENGTH_PRESETS[length];
   const isThinkingModel = modelName.includes("2.5");
 
+  // When web search (Google Search grounding) is enabled the model needs
+  // enough output-token headroom for grounding chunks + the answer itself.
+  // Mirror the Claude approach: floor at 4096 when search is on.
+  const baseTokens = webSearch
+    ? Math.max(preset.maxTokens, 4096)
+    : preset.maxTokens;
+  const maxOutputTokens = isThinkingModel
+    ? baseTokens + THINKING_BUDGET
+    : baseTokens;
+
   const t0 = performance.now();
   const result = await ai.models.generateContent({
     model: modelName,
     contents: prompt,
     config: {
-      maxOutputTokens: isThinkingModel
-        ? preset.maxTokens + THINKING_BUDGET
-        : preset.maxTokens,
+      maxOutputTokens,
       systemInstruction: preset.systemInstruction,
       ...(isThinkingModel && {
         thinkingConfig: { thinkingBudget: THINKING_BUDGET },
