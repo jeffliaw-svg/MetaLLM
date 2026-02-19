@@ -34,7 +34,11 @@ export async function queryChatGPT(
     model,
     instructions,
     input: prompt,
-    ...(webSearch && { tools: [{ type: "web_search_preview" as const }] }),
+    ...(webSearch && {
+      tools: [{ type: "web_search_preview" as const }],
+      // Force the model to use web search rather than letting it decide
+      tool_choice: { type: "web_search_preview" as const },
+    }),
     max_output_tokens: maxOutputTokens,
   });
   const latency = (performance.now() - t0) / 1000;
