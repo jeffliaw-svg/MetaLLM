@@ -12,7 +12,7 @@ export async function queryChatGPT(
   prompt: string,
   speed: Speed,
   length: Length,
-  { webSearch = true }: { webSearch?: boolean } = {}
+  { webSearch = true, systemOverride }: { webSearch?: boolean; systemOverride?: string } = {}
 ): Promise<ProviderResponse> {
   const model = MODEL_MAP.chatgpt[speed];
   const preset = LENGTH_PRESETS[length];
@@ -23,9 +23,11 @@ export async function queryChatGPT(
     ? Math.max(preset.maxTokens, 4096)
     : preset.maxTokens;
 
-  const instructions = webSearch
-    ? `${preset.systemInstruction}\n\nYou have access to a web search tool. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.`
-    : preset.systemInstruction;
+  const instructions = systemOverride
+    ? systemOverride
+    : webSearch
+      ? `${preset.systemInstruction}\n\nYou have access to a web search tool. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.`
+      : preset.systemInstruction;
 
   const t0 = performance.now();
   const response = await getClient().responses.create({

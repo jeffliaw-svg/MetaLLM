@@ -6,7 +6,7 @@ import type { ProviderResponse } from "./types";
 
 export type { ProviderResponse };
 
-export type QueryOptions = { webSearch?: boolean };
+export type QueryOptions = { webSearch?: boolean; systemOverride?: string };
 
 type QueryFn = (
   prompt: string,
