@@ -6,6 +6,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "" });
 
 /** Minimum thinking budget for gemini-2.5-pro (thinking can't be disabled). */
 const THINKING_BUDGET = 128;
+/** Higher thinking budget when web search is enabled — the model needs more
+ *  reasoning tokens to process grounding results. */
+const THINKING_BUDGET_WITH_SEARCH = 1024;
 
 export async function queryGemini(
   prompt: string,
@@ -17,15 +20,17 @@ export async function queryGemini(
   const preset = LENGTH_PRESETS[length];
   const isThinkingModel = modelName.includes("2.5");
 
-  // When web search (Google Search grounding) is enabled the model needs
-  // enough output-token headroom for grounding chunks + the answer itself.
-  // Mirror the Claude approach: floor at 4096 when search is on.
+  const thinkingBudget = webSearch ? THINKING_BUDGET_WITH_SEARCH : THINKING_BUDGET;
   const baseTokens = webSearch
     ? Math.max(preset.maxTokens, 4096)
     : preset.maxTokens;
   const maxOutputTokens = isThinkingModel
-    ? baseTokens + THINKING_BUDGET
+    ? baseTokens + thinkingBudget
     : baseTokens;
+
+  const systemInstruction = webSearch
+    ? `${preset.systemInstruction}\n\nYou have access to Google Search. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.`
+    : preset.systemInstruction;
 
   const t0 = performance.now();
   const result = await ai.models.generateContent({
@@ -33,9 +38,9 @@ export async function queryGemini(
     contents: prompt,
     config: {
       maxOutputTokens,
-      systemInstruction: preset.systemInstruction,
+      systemInstruction,
       ...(isThinkingModel && {
-        thinkingConfig: { thinkingBudget: THINKING_BUDGET },
+        thinkingConfig: { thinkingBudget },
       }),
       ...(webSearch && { tools: [{ googleSearch: {} }] }),
     },
