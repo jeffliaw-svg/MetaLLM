@@ -3,7 +3,7 @@
 import type { Engine } from "./config";
 import { getQueryFn, type ProviderResponse } from "./providers";
 
-const LABELS = ["A", "B", "C"] as const;
+const LABELS = ["A", "B", "C", "D"] as const;
 
 const ARBITER_SYSTEM = `You are an impartial arbiter. You will receive three responses to the same user query, labelled A, B, and C. You do NOT know which AI produced which response — evaluate them purely on merit.
 
