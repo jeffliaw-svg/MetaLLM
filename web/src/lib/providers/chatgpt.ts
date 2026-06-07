@@ -33,11 +33,11 @@ export async function queryChatGPT(
   const response = await getClient().responses.create({
     model,
     instructions,
-    input: prompt,
+    input: webSearch
+      ? `Search the web for current information, then answer this query:\n\n${prompt}`
+      : prompt,
     ...(webSearch && {
       tools: [{ type: "web_search_preview" as const }],
-      // Force the model to use web search rather than letting it decide
-      tool_choice: { type: "web_search_preview" as const },
     }),
     max_output_tokens: maxOutputTokens,
   });

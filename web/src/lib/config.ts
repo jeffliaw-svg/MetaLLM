@@ -3,7 +3,7 @@
 export type Mode = "single" | "bakeoff";
 export type Speed = "fast" | "moderate" | "research";
 export type Length = "brief" | "moderate" | "detailed" | "research";
-export type Engine = "claude" | "gemini" | "chatgpt";
+export type Engine = "claude" | "gemini" | "chatgpt" | "perplexity";
 
 export interface LengthPreset {
   maxTokens: number;
@@ -25,6 +25,11 @@ export const MODEL_MAP: Record<Engine, Record<Speed, string>> = {
     fast: "gpt-4o-mini",
     moderate: "gpt-4o",
     research: "o3",
+  },
+  perplexity: {
+    fast: "sonar",
+    moderate: "sonar-pro",
+    research: "sonar-reasoning-pro",
   },
 };
 
@@ -49,7 +54,7 @@ export const LENGTH_PRESETS: Record<Length, LengthPreset> = {
   },
 };
 
-export const ENGINES: Engine[] = ["claude", "gemini", "chatgpt"];
+export const ENGINES: Engine[] = ["claude", "gemini", "chatgpt", "perplexity"];
 
 export interface QueryRequest {
   prompt: string;

@@ -2,6 +2,7 @@ import type { Engine, Length, Speed } from "../config";
 import { queryChatGPT } from "./chatgpt";
 import { queryClaude } from "./claude";
 import { queryGemini } from "./gemini";
+import { queryPerplexity } from "./perplexity";
 import type { ProviderResponse } from "./types";
 
 export type { ProviderResponse };
@@ -19,6 +20,7 @@ const QUERY_FNS: Record<Engine, QueryFn> = {
   claude: queryClaude,
   gemini: queryGemini,
   chatgpt: queryChatGPT,
+  perplexity: queryPerplexity,
 };
 
 export function getQueryFn(engine: Engine): QueryFn {

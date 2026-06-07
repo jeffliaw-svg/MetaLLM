@@ -41,7 +41,9 @@ export async function queryGemini(
   const t0 = performance.now();
   const result = await getAI().models.generateContent({
     model: modelName,
-    contents: prompt,
+    contents: webSearch
+      ? `Search the web for current information, then answer this query:\n\n${prompt}`
+      : prompt,
     config: {
       maxOutputTokens,
       systemInstruction,

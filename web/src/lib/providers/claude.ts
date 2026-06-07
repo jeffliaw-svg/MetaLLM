@@ -30,11 +30,14 @@ export async function queryClaude(
     model,
     max_tokens: maxTokens,
     system: systemInstruction,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{
+      role: "user",
+      content: webSearch
+        ? `Search the web for current information, then answer this query:\n\n${prompt}`
+        : prompt,
+    }],
     ...(webSearch && {
       tools: [{ type: "web_search_20250305" as const, name: "web_search" }],
-      // Force the model to use web search rather than letting it decide
-      tool_choice: { type: "tool" as const, name: "web_search" },
     }),
   });
   const latency = (performance.now() - t0) / 1000;

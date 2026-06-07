@@ -20,6 +20,7 @@ interface ChatRequest {
 let _anthropic: Anthropic | null = null;
 let _genai: GoogleGenAI | null = null;
 let _openai: OpenAI | null = null;
+let _perplexity: OpenAI | null = null;
 function getAnthropic(): Anthropic {
   if (!_anthropic) _anthropic = new Anthropic();
   return _anthropic;
@@ -32,6 +33,13 @@ function getOpenAI(): OpenAI {
   if (!_openai) _openai = new OpenAI();
   return _openai;
 }
+function getPerplexity(): OpenAI {
+  if (!_perplexity) _perplexity = new OpenAI({
+    apiKey: process.env.PERPLEXITY_API_KEY ?? "",
+    baseURL: "https://api.perplexity.ai",
+  });
+  return _perplexity;
+}
 
 const SEARCH_INSTRUCTION =
   "\n\nYou have access to a web search tool. ALWAYS use it to find current, up-to-date information before answering. Do not rely on your training data for facts that may have changed.";
@@ -43,7 +51,6 @@ async function chatClaude(model: string, messages: ChatMessage[]): Promise<strin
     system: SEARCH_INSTRUCTION.trim(),
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     tools: [{ type: "web_search_20250305", name: "web_search" }],
-    tool_choice: { type: "tool", name: "web_search" },
   });
   const textBlocks = result.content.filter((b) => b.type === "text");
   const text = textBlocks.map((b: any) => b.text).join("");
@@ -98,10 +105,26 @@ async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<stri
     instructions: SEARCH_INSTRUCTION.trim(),
     input,
     tools: [{ type: "web_search_preview" }],
-    tool_choice: { type: "web_search_preview" },
     max_output_tokens: 4096,
   });
   return result.output_text ?? "";
+}
+
+async function chatPerplexity(model: string, messages: ChatMessage[]): Promise<string> {
+  const response = await getPerplexity().chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: SEARCH_INSTRUCTION.trim() },
+      ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+    ],
+    max_tokens: 4096,
+  });
+  const text = response.choices[0]?.message?.content ?? "";
+  const citations: string[] = (response as any).citations ?? [];
+  const sourcesText = citations.length > 0
+    ? "\n\n**Sources:**\n" + citations.map((url: string, i: number) => `- [${i + 1}](${url})`).join("\n")
+    : "";
+  return text + sourcesText;
 }
 
 export async function POST(request: Request) {
@@ -125,6 +148,9 @@ export async function POST(request: Request) {
         break;
       case "chatgpt":
         text = await chatChatGPT(body.model, body.messages);
+        break;
+      case "perplexity":
+        text = await chatPerplexity(body.model, body.messages);
         break;
       default:
         return NextResponse.json(
