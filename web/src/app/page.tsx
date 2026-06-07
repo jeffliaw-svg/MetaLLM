@@ -447,8 +447,8 @@ export default function Home() {
                   disabled={loading || !prompt.trim()}
                   className="submit-btn flex items-center gap-2"
                   style={{
-                    background: loading || !prompt.trim() ? "var(--border)" : "var(--accent-blue)",
-                    color: loading || !prompt.trim() ? "var(--text-tertiary)" : "#fff",
+                    background: loading || !prompt.trim() ? "#e0e0e0" : "var(--accent-blue)",
+                    color: loading || !prompt.trim() ? "#999" : "#fff",
                     cursor: loading || !prompt.trim() ? "not-allowed" : "pointer",
                   }}
                 >
