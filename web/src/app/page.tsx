@@ -326,7 +326,7 @@ export default function Home() {
 
         {/* ── Controls ────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
-          <div className="glass p-6 mb-6" style={{ border: "1px solid var(--border)" }}>
+          <div className="glass p-6 mb-6">
 
             {/* Mode toggle */}
             <div className="flex items-center gap-3 mb-6">
@@ -439,9 +439,8 @@ export default function Home() {
                 <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   {mode === "bakeoff"
                     ? `All 4 engines \u00b7 ${ENGINE_META[arbiter].label} arbitrates`
-                    : `${ENGINE_META[engine].label}`}
-                  {" \u00b7 "}
-                  {speed} \u00b7 {length}
+                    : ENGINE_META[engine].label}
+                  {` \u00b7 ${speed} \u00b7 ${length}`}
                 </span>
                 <button
                   type="submit"
