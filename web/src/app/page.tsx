@@ -312,23 +312,13 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="pt-12 pb-6 px-6 text-center">
-        <h1 className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
+      <header className="pt-16 pb-8 px-6 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
           Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
         </h1>
-        <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-          <EngineLogo engine="claude" size={20} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Claude</span>
-          <span className="text-sm font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
-          <EngineLogo engine="gemini" size={20} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Gemini</span>
-          <span className="text-sm font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
-          <EngineLogo engine="chatgpt" size={20} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>ChatGPT</span>
-          <span className="text-sm font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
-          <EngineLogo engine="perplexity" size={20} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Perplexity</span>
-        </div>
+        <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+          Compare AI engines side by side
+        </p>
       </header>
 
       {/* ── Main content ────────────────────────────────────────────── */}
@@ -336,10 +326,10 @@ export default function Home() {
 
         {/* ── Controls ────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
-          <div className="glass p-5 mb-5">
+          <div className="glass p-6 mb-6" style={{ border: "1px solid var(--border)" }}>
 
             {/* Mode toggle */}
-            <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-3 mb-6">
               <span className="setting-label">Mode</span>
               <div className="segmented-control">
                 <button
@@ -359,8 +349,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Settings row — segmented bars */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            {/* Settings row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
               <div>
                 <span className="setting-label mb-2 block">Speed</span>
                 <div className="segmented-control segmented-control-full">
@@ -378,7 +368,7 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <span className="setting-label mb-2 block">Response Length</span>
+                <span className="setting-label mb-2 block">Length</span>
                 <div className="segmented-control segmented-control-full">
                   {LENGTH_OPTIONS.map((o) => (
                     <button
@@ -396,7 +386,7 @@ export default function Home() {
             </div>
 
             {/* Engine / Arbiter selection */}
-            <div className="mb-5">
+            <div className="mb-6">
               <span className="setting-label mb-2 block">
                 {mode === "single" ? "Engine" : "Arbiter"}
               </span>
@@ -416,11 +406,8 @@ export default function Home() {
                         "--engine-color": meta.color,
                       } as React.CSSProperties}
                     >
-                      <span className="engine-radio">
-                        {isSelected && <span className="engine-radio-dot" style={{ background: meta.color }} />}
-                      </span>
                       <span className="engine-logo-wrap">
-                        <EngineLogo engine={eng} size={22} />
+                        <EngineLogo engine={eng} size={20} />
                       </span>
                       <span className="engine-name">{meta.label}</span>
                     </button>
@@ -436,7 +423,7 @@ export default function Home() {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Ask anything..."
                 rows={3}
-                className="w-full rounded-xl px-4 py-3.5 text-sm leading-relaxed"
+                className="w-full rounded-lg px-4 py-3 text-sm leading-relaxed"
                 style={{
                   background: "var(--bg-input)",
                   border: "1px solid var(--border)",
@@ -448,13 +435,13 @@ export default function Home() {
                   }
                 }}
               />
-              <div className="flex items-center justify-between mt-2.5">
+              <div className="flex items-center justify-between mt-3">
                 <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   {mode === "bakeoff"
                     ? `All 4 engines \u00b7 ${ENGINE_META[arbiter].label} arbitrates`
                     : `${ENGINE_META[engine].label}`}
                   {" \u00b7 "}
-                  {speed} &middot; {length}
+                  {speed} \u00b7 {length}
                 </span>
                 <button
                   type="submit"
@@ -469,13 +456,10 @@ export default function Home() {
                   {loading ? (
                     <>
                       <span className="spinner" />
-                      {mode === "bakeoff" ? "Querying 4 engines..." : "Querying..."}
+                      Querying...
                     </>
                   ) : (
-                    <>
-                      Run
-                      <span style={{ opacity: 0.5, fontSize: "0.7rem" }}>&thinsp;&#8984;&#9166;</span>
-                    </>
+                    "Run"
                   )}
                 </button>
               </div>
@@ -502,10 +486,7 @@ export default function Home() {
 
         {/* ── Error ─────────────────────────────────────────────── */}
         {error && (
-          <div
-            className="glass card-accent p-5 fade-in-up"
-            style={{ borderLeftColor: "var(--accent-rose)" }}
-          >
+          <div className="glass p-5 fade-in-up">
             <p className="text-sm" style={{ color: "var(--accent-rose)" }}>
               {error}
             </p>
@@ -620,18 +601,10 @@ function ResponseCard({ response }: { response: ProviderResponse }) {
   }
 
   return (
-    <div
-      className="glass card-accent p-6 mb-4"
-      style={{
-        borderLeftColor: meta.color,
-        background: `linear-gradient(135deg, ${meta.color}06 0%, var(--bg-card) 40%)`,
-      }}
-    >
+    <div className="glass p-6 mb-4">
       <div className="flex items-center gap-3 mb-4">
-        <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
-          <EngineLogo engine={response.engine} size={28} />
-        </span>
-        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+        <EngineLogo engine={response.engine} size={22} />
+        <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
           {response.model}
         </span>
@@ -775,13 +748,7 @@ function BakeoffResults({
           <div className="mb-3">
             <SectionLabel>Synthesised Answer</SectionLabel>
           </div>
-          <div
-            className="glass card-accent p-6 mb-6"
-            style={{
-              borderLeftColor: "var(--accent-purple)",
-              background: `linear-gradient(135deg, rgba(175, 82, 222, 0.04) 0%, var(--bg-card) 40%)`,
-            }}
-          >
+          <div className="glass p-6 mb-6">
             <div className="prose-response text-sm leading-relaxed">
               <ReactMarkdown>{arb.synthesis}</ReactMarkdown>
             </div>
@@ -793,23 +760,15 @@ function BakeoffResults({
       <div className="mt-10 mb-3">
         <SectionLabel>Bake-Off Winner</SectionLabel>
       </div>
-      <div
-        className="glass card-accent p-6 mb-6"
-        style={{
-          borderLeftColor: winnerMeta.color,
-          background: `linear-gradient(135deg, ${winnerMeta.color}08 0%, var(--bg-card) 50%)`,
-          boxShadow: `0 2px 16px ${winnerMeta.color}12, 0 1px 3px rgba(0, 0, 0, 0.06)`,
-        }}
-      >
+      <div className="glass p-6 mb-6">
         <div className="flex items-center gap-3 mb-3">
-          <span
-            className="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5"
-            style={{ background: winnerMeta.color, color: "#fff" }}
-          >
-            <TrophyIcon size={13} color="#fff" />
+          <EngineLogo engine={arb.bestEngine} size={22} />
+          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             {winnerMeta.label}
           </span>
-          <EngineLogo engine={arb.bestEngine} size={26} />
+          <span className="text-xs px-2 py-0.5 rounded" style={{ background: "var(--bg-input)", color: "var(--accent-blue)" }}>
+            Best
+          </span>
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           {arb.bestRationale}
@@ -822,18 +781,12 @@ function BakeoffResults({
           <div className="mt-10 mb-3">
             <SectionLabel>Consensus</SectionLabel>
           </div>
-          <div
-            className="glass card-accent p-6 mb-6"
-            style={{
-              borderLeftColor: "var(--accent-green)",
-              background: `linear-gradient(135deg, rgba(52, 199, 89, 0.03) 0%, var(--bg-card) 40%)`,
-            }}
-          >
+          <div className="glass p-6 mb-6">
             <ul className="space-y-3">
               {arb.consensus.map((point, i) => (
                 <li key={i} className="flex gap-3 text-sm" style={{ color: "var(--text-secondary)" }}>
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: "rgba(52, 199, 89, 0.12)", color: "var(--accent-green)" }}>
-                    &#10003;
+                  <span className="flex-shrink-0 text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+                    &bull;
                   </span>
                   {point}
                 </li>
@@ -852,13 +805,9 @@ function BakeoffResults({
           {arb.disagreements.map((d, i) => (
             <div
               key={i}
-              className="glass card-accent p-6 mb-4"
-              style={{
-                borderLeftColor: "var(--accent-amber)",
-                background: `linear-gradient(135deg, rgba(255, 159, 10, 0.03) 0%, var(--bg-card) 40%)`,
-              }}
+              className="glass p-6 mb-4"
             >
-              <h4 className="text-sm font-bold mb-3" style={{ color: "var(--accent-amber)" }}>
+              <h4 className="text-sm font-medium mb-3" style={{ color: "var(--text-primary)" }}>
                 {d.topic}
               </h4>
               <div className="space-y-2.5 mb-4">
@@ -899,10 +848,8 @@ function BakeoffResults({
               className="accordion-trigger w-full p-5 flex items-center gap-3 text-left"
               style={{ cursor: "pointer" }}
             >
-              <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                <EngineLogo engine={r.engine} size={28} />
-              </span>
-              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+              <EngineLogo engine={r.engine} size={20} />
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
               <span className="text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
                 {r.model}
               </span>
@@ -1002,17 +949,11 @@ function BakeoffResults({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4">
-      <h3
-        className="text-base font-bold tracking-tight flex-shrink-0"
-        style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
-      >
-        {children}
-      </h3>
-      <div
-        className="flex-1 h-px"
-        style={{ background: "linear-gradient(90deg, var(--border), transparent)" }}
-      />
-    </div>
+    <h3
+      className="text-xs font-medium tracking-wide"
+      style={{ color: "var(--text-tertiary)", letterSpacing: "0.05em" }}
+    >
+      {children}
+    </h3>
   );
 }

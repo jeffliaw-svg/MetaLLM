@@ -255,10 +255,10 @@ export default function SharePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="pt-14 pb-8 px-6 text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight" style={{ letterSpacing: "-0.04em" }}>
-          LLM <span style={{ color: "var(--accent-blue)" }}>Showdown</span>
+        <h1 className="text-2xl font-semibold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
+          Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
         </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
+        <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
           Shared analysis
         </p>
       </header>
@@ -266,7 +266,7 @@ export default function SharePage() {
       <main className="flex-1 w-full max-w-4xl mx-auto px-6 pb-24">
         {/* Query info */}
         <div className="glass p-6 mb-6">
-          <p className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+          <p className="text-xs font-medium tracking-wide mb-2" style={{ color: "var(--text-tertiary)" }}>
             Prompt
           </p>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>
@@ -328,18 +328,10 @@ export default function SharePage() {
 function SharedResponseCard({ response }: { response: ProviderResponse }) {
   const meta = ENGINE_META[response.engine];
   return (
-    <div
-      className="glass card-accent p-6 mb-4"
-      style={{
-        borderLeftColor: meta.color,
-        background: `linear-gradient(135deg, ${meta.color}06 0%, var(--bg-card) 40%)`,
-      }}
-    >
+    <div className="glass p-6 mb-4">
       <div className="flex items-center gap-3 mb-4">
-        <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
-          <EngineLogo engine={response.engine} size={28} />
-        </span>
-        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+        <EngineLogo engine={response.engine} size={22} />
+        <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
           {response.model}
         </span>
@@ -380,13 +372,7 @@ function SharedBakeoffResults({
           <div className="mb-3">
             <SectionLabel>Synthesised Answer</SectionLabel>
           </div>
-          <div
-            className="glass card-accent p-6 mb-6"
-            style={{
-              borderLeftColor: "var(--accent-purple)",
-              background: `linear-gradient(135deg, rgba(175, 82, 222, 0.04) 0%, var(--bg-card) 40%)`,
-            }}
-          >
+          <div className="glass p-6 mb-6">
             <div className="prose-response text-sm leading-relaxed">
               <ReactMarkdown>{arb.synthesis}</ReactMarkdown>
             </div>
@@ -397,23 +383,15 @@ function SharedBakeoffResults({
       <div className="mt-10 mb-3">
         <SectionLabel>Bake-Off Winner</SectionLabel>
       </div>
-      <div
-        className="glass card-accent p-6 mb-6"
-        style={{
-          borderLeftColor: winnerMeta.color,
-          background: `linear-gradient(135deg, ${winnerMeta.color}08 0%, var(--bg-card) 50%)`,
-          boxShadow: `0 2px 16px ${winnerMeta.color}12, 0 1px 3px rgba(0, 0, 0, 0.06)`,
-        }}
-      >
+      <div className="glass p-6 mb-6">
         <div className="flex items-center gap-3 mb-3">
-          <span
-            className="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5"
-            style={{ background: winnerMeta.color, color: "#fff" }}
-          >
-            <TrophyIcon size={13} color="#fff" />
+          <EngineLogo engine={arb.bestEngine} size={22} />
+          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             {winnerMeta.label}
           </span>
-          <EngineLogo engine={arb.bestEngine} size={26} />
+          <span className="text-xs px-2 py-0.5 rounded" style={{ background: "var(--bg-input)", color: "var(--accent-blue)" }}>
+            Best
+          </span>
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           {arb.bestRationale}
@@ -425,18 +403,12 @@ function SharedBakeoffResults({
           <div className="mt-10 mb-3">
             <SectionLabel>Consensus</SectionLabel>
           </div>
-          <div
-            className="glass card-accent p-6 mb-6"
-            style={{
-              borderLeftColor: "var(--accent-green)",
-              background: `linear-gradient(135deg, rgba(52, 199, 89, 0.03) 0%, var(--bg-card) 40%)`,
-            }}
-          >
+          <div className="glass p-6 mb-6">
             <ul className="space-y-3">
               {arb.consensus.map((point, i) => (
                 <li key={i} className="flex gap-3 text-sm" style={{ color: "var(--text-secondary)" }}>
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: "rgba(52, 199, 89, 0.12)", color: "var(--accent-green)" }}>
-                    &#10003;
+                  <span className="flex-shrink-0 text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+                    &bull;
                   </span>
                   {point}
                 </li>
@@ -454,13 +426,9 @@ function SharedBakeoffResults({
           {arb.disagreements.map((d, i) => (
             <div
               key={i}
-              className="glass card-accent p-6 mb-4"
-              style={{
-                borderLeftColor: "var(--accent-amber)",
-                background: `linear-gradient(135deg, rgba(255, 159, 10, 0.03) 0%, var(--bg-card) 40%)`,
-              }}
+              className="glass p-6 mb-4"
             >
-              <h4 className="text-sm font-bold mb-3" style={{ color: "var(--accent-amber)" }}>
+              <h4 className="text-sm font-medium mb-3" style={{ color: "var(--text-primary)" }}>
                 {d.topic}
               </h4>
               <div className="space-y-2.5 mb-4">
@@ -499,10 +467,8 @@ function SharedBakeoffResults({
               className="accordion-trigger w-full p-5 flex items-center gap-3 text-left"
               style={{ cursor: "pointer" }}
             >
-              <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                <EngineLogo engine={r.engine} size={28} />
-              </span>
-              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+              <EngineLogo engine={r.engine} size={20} />
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
               <span className="text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
                 {r.model}
               </span>
@@ -539,17 +505,11 @@ function SharedBakeoffResults({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4">
-      <h3
-        className="text-base font-bold tracking-tight flex-shrink-0"
-        style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
-      >
-        {children}
-      </h3>
-      <div
-        className="flex-1 h-px"
-        style={{ background: "linear-gradient(90deg, var(--border), transparent)" }}
-      />
-    </div>
+    <h3
+      className="text-xs font-medium tracking-wide"
+      style={{ color: "var(--text-tertiary)", letterSpacing: "0.05em" }}
+    >
+      {children}
+    </h3>
   );
 }
