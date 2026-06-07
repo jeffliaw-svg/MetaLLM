@@ -46,12 +46,27 @@ async function runBakeoff(
   length: Length,
   arbiterEngine: Engine
 ): Promise<BakeoffResult> {
-  // Fan out to all three engines in parallel.
-  const responses = await Promise.all(
+  // Fan out to all engines in parallel — tolerate individual failures.
+  const settled = await Promise.allSettled(
     ENGINES.map((engine) => getQueryFn(engine)(prompt, speed, length))
   );
 
-  // Arbitrate.
+  const responses: ProviderResponse[] = [];
+  const errors: string[] = [];
+  settled.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      responses.push(result.value);
+    } else {
+      errors.push(`${ENGINES[i]}: ${result.reason?.message ?? "unknown error"}`);
+    }
+  });
+
+  if (responses.length < 2) {
+    throw new Error(
+      `Too few engines succeeded (${responses.length}/${ENGINES.length}). Failures: ${errors.join("; ")}`
+    );
+  }
+
   const arbitration = await arbitrate(prompt, responses, arbiterEngine);
 
   return { kind: "bakeoff", responses, arbitration };
