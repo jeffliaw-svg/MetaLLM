@@ -57,6 +57,7 @@ const ENGINE_META: Record<Engine, { label: string; color: string }> = {
   claude: { label: "Claude", color: "#da7756" },
   gemini: { label: "Gemini", color: "#4285f4" },
   chatgpt: { label: "ChatGPT", color: "#10a37f" },
+  perplexity: { label: "Perplexity", color: "#1a7f64" },
 };
 
 /* ── Brand Logo SVG Components ────────────────────────────────────── */
@@ -92,15 +93,25 @@ function OpenAILogo({ size = 24 }: { size?: number }) {
   );
 }
 
+function PerplexityLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.2L18 8v3h-3V8.5L12 6.8 9 8.5V11H6V8l6-3.8zM9 13v3.5l3 1.8 3-1.8V13h3v5l-6 3.8L6 18v-5h3z" fill="#1a7f64"/>
+    </svg>
+  );
+}
+
 function EngineLogo({ engine, size = 24 }: { engine: Engine; size?: number }) {
   switch (engine) {
     case "claude": return <ClaudeLogo size={size} />;
     case "gemini": return <GeminiLogo size={size} />;
     case "chatgpt": return <OpenAILogo size={size} />;
+    case "perplexity": return <PerplexityLogo size={size} />;
+    default: return null;
   }
 }
 
-const ENGINES: Engine[] = ["claude", "gemini", "chatgpt"];
+const ENGINES: Engine[] = ["claude", "gemini", "chatgpt", "perplexity"];
 
 const SPEED_OPTIONS: { value: Speed; label: string }[] = [
   { value: "fast", label: "Fast" },
@@ -109,7 +120,7 @@ const SPEED_OPTIONS: { value: Speed; label: string }[] = [
 ];
 
 function speedTooltip(s: Speed): string {
-  return `Claude: ${MODEL_MAP.claude[s]}\nGemini: ${MODEL_MAP.gemini[s]}\nChatGPT: ${MODEL_MAP.chatgpt[s]}`;
+  return `Claude: ${MODEL_MAP.claude[s]}\nGemini: ${MODEL_MAP.gemini[s]}\nChatGPT: ${MODEL_MAP.chatgpt[s]}\nPerplexity: ${MODEL_MAP.perplexity[s]}`;
 }
 
 const LENGTH_OPTIONS: { value: Length; label: string }[] = [
@@ -119,7 +130,7 @@ const LENGTH_OPTIONS: { value: Length; label: string }[] = [
   { value: "research", label: "Research" },
 ];
 
-const RESPONSE_LABELS = ["A", "B", "C"];
+const RESPONSE_LABELS = ["A", "B", "C", "D"];
 
 /** Map arbiter's anonymous A/B/C label to the actual engine key & color. */
 function engineForLabel(
@@ -303,17 +314,20 @@ export default function Home() {
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="pt-12 pb-6 px-6 text-center">
         <h1 className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
-          LLM <span style={{ color: "var(--accent-blue)" }}>Showdown</span>
+          Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
         </h1>
-        <div className="mt-3 flex items-center justify-center gap-3">
-          <EngineLogo engine="claude" size={22} />
-          <span className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Claude</span>
-          <span className="text-lg font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
-          <EngineLogo engine="gemini" size={22} />
-          <span className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Gemini</span>
-          <span className="text-lg font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
-          <EngineLogo engine="chatgpt" size={22} />
-          <span className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>ChatGPT</span>
+        <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+          <EngineLogo engine="claude" size={20} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Claude</span>
+          <span className="text-sm font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
+          <EngineLogo engine="gemini" size={20} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Gemini</span>
+          <span className="text-sm font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
+          <EngineLogo engine="chatgpt" size={20} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>ChatGPT</span>
+          <span className="text-sm font-light" style={{ color: "var(--text-tertiary)" }}>vs.</span>
+          <EngineLogo engine="perplexity" size={20} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Perplexity</span>
         </div>
       </header>
 
@@ -437,7 +451,7 @@ export default function Home() {
               <div className="flex items-center justify-between mt-2.5">
                 <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   {mode === "bakeoff"
-                    ? `All 3 engines \u00b7 ${ENGINE_META[arbiter].label} arbitrates`
+                    ? `All 4 engines \u00b7 ${ENGINE_META[arbiter].label} arbitrates`
                     : `${ENGINE_META[engine].label}`}
                   {" \u00b7 "}
                   {speed} &middot; {length}
@@ -455,7 +469,7 @@ export default function Home() {
                   {loading ? (
                     <>
                       <span className="spinner" />
-                      {mode === "bakeoff" ? "Querying 3 engines..." : "Querying..."}
+                      {mode === "bakeoff" ? "Querying 4 engines..." : "Querying..."}
                     </>
                   ) : (
                     <>
@@ -476,10 +490,11 @@ export default function Home() {
               <div className="pulse-dot" style={{ background: ENGINE_META.claude.color }} />
               <div className="pulse-dot" style={{ background: ENGINE_META.gemini.color }} />
               <div className="pulse-dot" style={{ background: ENGINE_META.chatgpt.color }} />
+              <div className="pulse-dot" style={{ background: ENGINE_META.perplexity.color }} />
             </div>
             <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
               {mode === "bakeoff"
-                ? "Querying Claude, Gemini & ChatGPT in parallel..."
+                ? "Querying 4 engines in parallel..."
                 : `Querying ${ENGINE_META[engine].label}...`}
             </p>
           </div>

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LLM Showdown: Claude vs. Gemini vs. ChatGPT",
-  description: "Multi-AI arbitration — query Claude, Gemini, and ChatGPT, then let an arbiter choose the best.",
+  title: "MetaLLM — Claude vs. Gemini vs. ChatGPT vs. Perplexity",
+  description: "Multi-AI arbitration — query Claude, Gemini, ChatGPT, and Perplexity, then let an arbiter choose the best.",
 };
 
 export default function RootLayout({

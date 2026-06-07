@@ -62,9 +62,10 @@ const ENGINE_META: Record<Engine, { label: string; color: string }> = {
   claude: { label: "Claude", color: "#da7756" },
   gemini: { label: "Gemini", color: "#4285f4" },
   chatgpt: { label: "ChatGPT", color: "#10a37f" },
+  perplexity: { label: "Perplexity", color: "#1a7f64" },
 };
 
-const RESPONSE_LABELS = ["A", "B", "C"];
+const RESPONSE_LABELS = ["A", "B", "C", "D"];
 
 function engineForLabel(label: string, responses: ProviderResponse[]): { engine: Engine | null; color: string } {
   const idx = RESPONSE_LABELS.indexOf(label);
@@ -108,11 +109,21 @@ function OpenAILogo({ size = 24 }: { size?: number }) {
   );
 }
 
+function PerplexityLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.2L18 8v3h-3V8.5L12 6.8 9 8.5V11H6V8l6-3.8zM9 13v3.5l3 1.8 3-1.8V13h3v5l-6 3.8L6 18v-5h3z" fill="#1a7f64"/>
+    </svg>
+  );
+}
+
 function EngineLogo({ engine, size = 24 }: { engine: Engine; size?: number }) {
   switch (engine) {
     case "claude": return <ClaudeLogo size={size} />;
     case "gemini": return <GeminiLogo size={size} />;
     case "chatgpt": return <OpenAILogo size={size} />;
+    case "perplexity": return <PerplexityLogo size={size} />;
+    default: return null;
   }
 }
 
