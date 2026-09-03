@@ -1,958 +1,345 @@
 "use client";
 
-import { useState, useRef } from "react";
-import ReactMarkdown from "react-markdown";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Lock } from "@/components/Icons";
 import {
-  LENGTH_PRESETS,
-  MODEL_MAP,
-  type Engine,
-  type Length,
-  type Mode,
-  type QueryRequest,
-  type Speed,
-} from "@/lib/config";
+  DEPTH_LABEL,
+  clockTime,
+  groupByDay,
+  isInFlight,
+  statusLabel,
+} from "@/lib/format";
 
-/* ── Type mirrors of the API response ───────────────────────────────── */
-
-interface ProviderResponse {
-  engine: Engine;
-  model: string;
-  text: string;
-  latencySeconds: number;
-  inputTokens: number;
-  outputTokens: number;
+interface ThoughtRow {
+  id: string;
+  title: string | null;
+  raw_text: string;
+  depth: string;
+  status: string;
+  synopsis: string | null;
+  best_engine: string | null;
+  has_disagreements: boolean;
+  created_at: string;
+  answered_at: string | null;
 }
 
-interface Disagreement {
-  topic: string;
-  positions: Record<string, string>;
-  assessment: string;
-}
-
-interface ArbiterResult {
-  bestLabel: string;
-  bestEngine: Engine;
-  bestRationale: string;
-  consensus: string[];
-  disagreements: Disagreement[];
-  synthesis: string;
-}
-
-interface SingleResult {
-  kind: "single";
-  response: ProviderResponse;
-}
-
-interface BakeoffResult {
-  kind: "bakeoff";
-  responses: ProviderResponse[];
-  arbitration: ArbiterResult;
-}
-
-type QueryResult = SingleResult | BakeoffResult;
-
-/* ── Constants ──────────────────────────────────────────────────────── */
-
-const ENGINE_META: Record<Engine, { label: string; color: string }> = {
-  claude: { label: "Claude", color: "#da7756" },
-  gemini: { label: "Gemini", color: "#4285f4" },
-  chatgpt: { label: "ChatGPT", color: "#10a37f" },
-  perplexity: { label: "Perplexity", color: "#1a7f64" },
-};
-
-/* ── Brand Logo SVG Components ────────────────────────────────────── */
-
-function ClaudeLogo({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="#da7756">
-      <path d="m3.127 10.604 3.135-1.76.053-.153-.053-.085H6.11l-.525-.032-1.791-.048-1.554-.065-1.505-.08-.38-.081L0 7.832l.036-.234.32-.214.455.04 1.009.069 1.513.105 1.097.064 1.626.17h.259l.036-.105-.089-.065-.068-.064-1.566-1.062-1.695-1.121-.887-.646-.48-.327-.243-.306-.104-.67.435-.48.585.04.15.04.593.456 1.267.981 1.654 1.218.242.202.097-.068.012-.049-.109-.181-.9-1.626-.96-1.655-.428-.686-.113-.411a2 2 0 0 1-.068-.484l.496-.674L4.446 0l.662.089.279.242.411.94.666 1.48 1.033 2.014.302.597.162.553.06.17h.105v-.097l.085-1.134.157-1.392.154-1.792.052-.504.25-.605.497-.327.387.186.319.456-.045.294-.19 1.23-.37 1.93-.243 1.29h.142l.161-.16.654-.868 1.097-1.372.484-.545.565-.601.363-.287h.686l.505.751-.226.775-.707.895-.585.759-.839 1.13-.524.904.048.072.125-.012 1.897-.403 1.024-.186 1.223-.21.553.258.06.263-.218.536-1.307.323-1.533.307-2.284.54-.028.02.032.04 1.029.098.44.024h1.077l2.005.15.525.346.315.424-.053.323-.807.411-3.631-.863-.872-.218h-.12v.073l.726.71 1.331 1.202 1.667 1.55.084.383-.214.302-.226-.032-1.464-1.101-.565-.497-1.28-1.077h-.084v.113l.295.432 1.557 2.34.08.718-.112.234-.404.141-.444-.08-.911-1.28-.94-1.44-.759-1.291-.093.053-.448 4.821-.21.246-.484.186-.403-.307-.214-.496.214-.98.258-1.28.21-1.016.19-1.263.112-.42-.008-.028-.092.012-.953 1.307-1.448 1.957-1.146 1.227-.274.109-.477-.247.045-.44.266-.39 1.586-2.018.956-1.25.617-.723-.004-.105h-.036l-4.212 2.736-.75.096-.324-.302.04-.496.154-.162 1.267-.871z"/>
-    </svg>
-  );
-}
-
-function GeminiLogo({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <path d="M24 4C24 15.05 15.05 24 4 24c11.05 0 20 8.95 20 20 0-11.05 8.95-20 20-20-11.05 0-20-8.95-20-20z" fill="url(#gemini-grad)"/>
-      <defs>
-        <linearGradient id="gemini-grad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#4285f4"/>
-          <stop offset="0.5" stopColor="#9b72cb"/>
-          <stop offset="1" stopColor="#d96570"/>
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function OpenAILogo({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <path d="M41.2 20.3a10.7 10.7 0 00-.9-8.8 10.8 10.8 0 00-11.6-5.2A10.8 10.8 0 0020.6 2a10.7 10.7 0 00-10.2 7.4 10.7 10.7 0 00-7.2 5.2 10.8 10.8 0 001.3 12.6 10.7 10.7 0 00.9 8.8 10.8 10.8 0 0011.6 5.2A10.8 10.8 0 0027.4 46a10.7 10.7 0 0010.2-7.4 10.7 10.7 0 007.2-5.2 10.8 10.8 0 00-1.3-12.6l-2.3-.5zM27.4 43.4a8 8 0 01-5.2-1.9l.3-.1 8.5-4.9a1.4 1.4 0 00.7-1.2V22.7l3.6 2.1v12.6a8.1 8.1 0 01-7.9 6zM8.4 35.5a8 8 0 01-1-5.4l.3.2 8.5 4.9a1.4 1.4 0 001.4 0l10.4-6v4.1l-8.6 5a8.1 8.1 0 01-11-2.8zM6.2 16a8 8 0 014.2-3.5v10.1a1.4 1.4 0 00.7 1.2l10.4 6-3.6 2.1L9.4 27a8.1 8.1 0 01-3.2-11zm28.2 6.6L24 16.5l3.6-2.1 8.5 4.9a8.1 8.1 0 011.2 13.3V22.5a1.4 1.4 0 00-.7-1.2l-2.2.3zm3.5-5.5l-.3-.2-8.5-4.9a1.4 1.4 0 00-1.4 0l-10.4 6V14l8.6-5a8.1 8.1 0 0112 7.1zm-22.5 7.4l-3.6-2.1V10.9a8.1 8.1 0 0113.2-6.3l-.3.2-8.5 4.9a1.4 1.4 0 00-.7 1.2l-.1 12.6zm2-4.2l4.6-2.7 4.6 2.7v5.3l-4.6 2.7-4.6-2.7v-5.3z" fill="#10a37f"/>
-    </svg>
-  );
-}
-
-function PerplexityLogo({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.2L18 8v3h-3V8.5L12 6.8 9 8.5V11H6V8l6-3.8zM9 13v3.5l3 1.8 3-1.8V13h3v5l-6 3.8L6 18v-5h3z" fill="#1a7f64"/>
-    </svg>
-  );
-}
-
-function EngineLogo({ engine, size = 24 }: { engine: Engine; size?: number }) {
-  switch (engine) {
-    case "claude": return <ClaudeLogo size={size} />;
-    case "gemini": return <GeminiLogo size={size} />;
-    case "chatgpt": return <OpenAILogo size={size} />;
-    case "perplexity": return <PerplexityLogo size={size} />;
-    default: return null;
-  }
-}
-
-const ENGINES: Engine[] = ["claude", "gemini", "chatgpt", "perplexity"];
-
-const SPEED_OPTIONS: { value: Speed; label: string }[] = [
-  { value: "fast", label: "Fast" },
-  { value: "moderate", label: "Moderate" },
-  { value: "research", label: "Research" },
-];
-
-function speedTooltip(s: Speed): string {
-  return `Claude: ${MODEL_MAP.claude[s]}\nGemini: ${MODEL_MAP.gemini[s]}\nChatGPT: ${MODEL_MAP.chatgpt[s]}\nPerplexity: ${MODEL_MAP.perplexity[s]}`;
-}
-
-const LENGTH_OPTIONS: { value: Length; label: string }[] = [
-  { value: "brief", label: "Brief" },
-  { value: "moderate", label: "Moderate" },
-  { value: "detailed", label: "Detailed" },
-  { value: "research", label: "Research" },
-];
-
-const RESPONSE_LABELS = ["A", "B", "C", "D"];
-
-/** Map arbiter's anonymous A/B/C label to the actual engine key & color. */
-function engineForLabel(
-  label: string,
-  responses: ProviderResponse[]
-): { engine: Engine | null; color: string } {
-  const idx = RESPONSE_LABELS.indexOf(label);
-  if (idx >= 0 && idx < responses.length) {
-    const eng = responses[idx].engine;
-    return { engine: eng, color: ENGINE_META[eng].color };
-  }
-  return { engine: null, color: "var(--border)" };
-}
-
-/* ── Trophy icon ────────────────────────────────────────────────────── */
-
-function TrophyIcon({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-    </svg>
-  );
-}
-
-/* ── Page ───────────────────────────────────────────────────────────── */
+const POLL_MS = 4000;
 
 export default function Home() {
-  const [mode, setMode] = useState<Mode>("bakeoff");
-  const [speed, setSpeed] = useState<Speed>("moderate");
-  const [length, setLength] = useState<Length>("moderate");
-  const [engine, setEngine] = useState<Engine>("claude");
-  const [arbiter, setArbiter] = useState<Engine>("claude");
-  const [prompt, setPrompt] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<QueryResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [locked, setLocked] = useState<boolean | null>(null);
+  const [thoughts, setThoughts] = useState<ThoughtRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
-  // Share / copy state
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const load = useCallback(async () => {
+    const res = await fetch("/api/thoughts", { cache: "no-store" });
 
-  // Collapsible individual responses
-  const [expandedEngines, setExpandedEngines] = useState<Set<string>>(new Set());
-
-  function toggleEngine(eng: string) {
-    setExpandedEngines((prev) => {
-      const next = new Set(prev);
-      if (next.has(eng)) next.delete(eng);
-      else next.add(eng);
-      return next;
-    });
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!prompt.trim() || loading) return;
-
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    setShareUrl(null);
-    setExpandedEngines(new Set());
-
-    const body: QueryRequest = {
-      prompt: prompt.trim(),
-      mode,
-      speed,
-      length,
-      ...(mode === "single" ? { engine } : { arbiter }),
-    };
-
-    try {
-      const res = await fetch("/api/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed.");
-      setResult(data);
-
-      // Auto-save to Supabase
-      saveSearch(body, data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setLoading(false);
+    if (res.status === 401) {
+      setLocked(true);
+      setLoaded(true);
+      return;
     }
+
+    const data = await res.json();
+    setLocked(false);
+    setThoughts(data.thoughts ?? []);
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Poll only while something is actually in flight.
+  const anyPending = thoughts.some((t) => isInFlight(t.status));
+
+  useEffect(() => {
+    if (locked || !anyPending) return;
+    const timer = setInterval(load, POLL_MS);
+    return () => clearInterval(timer);
+  }, [locked, anyPending, load]);
+
+  if (locked === null || !loaded) {
+    return <div className="center-stage" />;
   }
 
-  async function saveSearch(req: QueryRequest, queryResult: QueryResult) {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/searches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: req.prompt,
-          mode: req.mode,
-          speed: req.speed,
-          length: req.length,
-          engine: req.engine ?? null,
-          arbiter: req.arbiter ?? null,
-          result: queryResult,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.id) {
-        setShareUrl(`${window.location.origin}/share/${data.id}`);
-      }
-    } catch {
-      // Save is best-effort — don't block the user
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function buildCopyText(): string {
-    if (!result) return "";
-    const lines: string[] = [`# LLM Showdown Analysis`, "", `**Prompt:** ${prompt}`, ""];
-
-    if (result.kind === "single") {
-      const meta = ENGINE_META[result.response.engine];
-      lines.push(`## ${meta.label}`, "", result.response.text);
-    } else {
-      const arb = result.arbitration;
-      if (arb.synthesis) {
-        lines.push("## Synthesised Answer", "", arb.synthesis, "");
-      }
-      const bestMeta = ENGINE_META[arb.bestEngine];
-      lines.push(`## Bake-Off Winner`, "", `**Best: ${bestMeta.label}** — ${arb.bestRationale}`, "");
-      if (arb.consensus.length > 0) {
-        lines.push("## Consensus", "");
-        arb.consensus.forEach((p) => lines.push(`- ${p}`));
-        lines.push("");
-      }
-      if (arb.disagreements.length > 0) {
-        lines.push("## Disagreements", "");
-        arb.disagreements.forEach((d) => {
-          lines.push(`### ${d.topic}`, "");
-          Object.entries(d.positions).forEach(([lbl, pos]) => {
-            const em = engineForLabel(lbl, result.responses);
-            const name = em.engine ? ENGINE_META[em.engine].label : lbl;
-            lines.push(`- **${name}:** ${pos}`);
-          });
-          lines.push("", `*${d.assessment}*`, "");
-        });
-      }
-      // Only include expanded individual responses
-      result.responses.forEach((resp) => {
-        if (expandedEngines.has(resp.engine)) {
-          const meta = ENGINE_META[resp.engine];
-          lines.push(`## ${meta.label} Response`, "", resp.text, "");
-        }
-      });
-    }
-    return lines.join("\n");
-  }
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(buildCopyText());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  async function handleCopyShareUrl() {
-    if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="pt-16 pb-8 px-6 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight" style={{ letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
-          Meta<span style={{ color: "var(--accent-blue)" }}>LLM</span>
-        </h1>
-        <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
-          Compare AI engines side by side
-        </p>
-      </header>
-
-      {/* ── Main content ────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-6 pb-24">
-
-        {/* ── Controls ────────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit}>
-          <div className="glass p-6 mb-6">
-
-            {/* Mode toggle */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="setting-label">Mode</span>
-              <div className="segmented-control">
-                <button
-                  type="button"
-                  onClick={() => setMode("single")}
-                  className={`segmented-option ${mode === "single" ? "segmented-active" : ""}`}
-                >
-                  Single Engine
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("bakeoff")}
-                  className={`segmented-option ${mode === "bakeoff" ? "segmented-active" : ""}`}
-                >
-                  Bake-off
-                </button>
-              </div>
-            </div>
-
-            {/* Settings row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
-              <div>
-                <span className="setting-label mb-2 block">Speed</span>
-                <div className="segmented-control segmented-control-full">
-                  {SPEED_OPTIONS.map((o) => (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => setSpeed(o.value)}
-                      className={`segmented-option ${speed === o.value ? "segmented-active" : ""}`}
-                      title={speedTooltip(o.value)}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span className="setting-label mb-2 block">Length</span>
-                <div className="segmented-control segmented-control-full">
-                  {LENGTH_OPTIONS.map((o) => (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => setLength(o.value)}
-                      className={`segmented-option ${length === o.value ? "segmented-active" : ""}`}
-                      title={`Max tokens: ${LENGTH_PRESETS[o.value].maxTokens}`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Engine / Arbiter selection */}
-            <div className="mb-6">
-              <span className="setting-label mb-2 block">
-                {mode === "single" ? "Engine" : "Arbiter"}
-              </span>
-              <div className="engine-grid">
-                {ENGINES.map((eng) => {
-                  const meta = ENGINE_META[eng];
-                  const isSelected = mode === "single" ? engine === eng : arbiter === eng;
-                  return (
-                    <button
-                      key={eng}
-                      type="button"
-                      onClick={() =>
-                        mode === "single" ? setEngine(eng) : setArbiter(eng)
-                      }
-                      className={`engine-card ${isSelected ? "engine-card-active" : ""}`}
-                      style={{
-                        "--engine-color": meta.color,
-                      } as React.CSSProperties}
-                    >
-                      <span className="engine-logo-wrap">
-                        <EngineLogo engine={eng} size={20} />
-                      </span>
-                      <span className="engine-name">{meta.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Prompt input */}
-            <div>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Ask anything..."
-                rows={3}
-                className="w-full rounded-lg px-4 py-3 text-sm leading-relaxed"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    handleSubmit(e);
-                  }
-                }}
-              />
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                  {mode === "bakeoff"
-                    ? `All 4 engines \u00b7 ${ENGINE_META[arbiter].label} arbitrates`
-                    : ENGINE_META[engine].label}
-                  {` \u00b7 ${speed} \u00b7 ${length}`}
-                </span>
-                <button
-                  type="submit"
-                  disabled={loading || !prompt.trim()}
-                  className="submit-btn flex items-center gap-2"
-                  style={{
-                    background: loading || !prompt.trim() ? "#e0e0e0" : "var(--accent-blue)",
-                    color: loading || !prompt.trim() ? "#999" : "#fff",
-                    cursor: loading || !prompt.trim() ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner" />
-                      Querying...
-                    </>
-                  ) : (
-                    "Run"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
-
-        {/* ── Loading state ─────────────────────────────────────── */}
-        {loading && (
-          <div className="glass p-8 flex flex-col items-center justify-center gap-4 fade-in-up">
-            <div className="flex gap-2">
-              <div className="pulse-dot" style={{ background: ENGINE_META.claude.color }} />
-              <div className="pulse-dot" style={{ background: ENGINE_META.gemini.color }} />
-              <div className="pulse-dot" style={{ background: ENGINE_META.chatgpt.color }} />
-              <div className="pulse-dot" style={{ background: ENGINE_META.perplexity.color }} />
-            </div>
-            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
-              {mode === "bakeoff"
-                ? "Querying 4 engines in parallel..."
-                : `Querying ${ENGINE_META[engine].label}...`}
-            </p>
-          </div>
-        )}
-
-        {/* ── Error ─────────────────────────────────────────────── */}
-        {error && (
-          <div className="glass p-5 fade-in-up">
-            <p className="text-sm" style={{ color: "var(--accent-rose)" }}>
-              {error}
-            </p>
-          </div>
-        )}
-
-        {/* ── Results ───────────────────────────────────────────── */}
-        {result && !loading && (
-          <>
-            <div className="stagger">
-              {result.kind === "single" ? (
-                <ResponseCard response={result.response} />
-              ) : (
-                <BakeoffResults
-                  result={result}
-                  expandedEngines={expandedEngines}
-                  onToggle={toggleEngine}
-                />
-              )}
-            </div>
-
-            {/* Floating action bar — outside all cards */}
-            <div className="flex justify-center mt-8 fade-in-up">
-              <div className="action-bar flex items-center gap-2 px-4 py-2">
-                <button
-                  onClick={handleCopy}
-                  className="px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2"
-                  style={{
-                    background: copied && !shareUrl ? "var(--accent-green)" : "transparent",
-                    color: copied && !shareUrl ? "#fff" : "var(--text-secondary)",
-                  }}
-                >
-                  {copied && !shareUrl ? (
-                    <>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                      Copy results
-                    </>
-                  )}
-                </button>
-                {saving && (
-                  <span className="text-xs px-2" style={{ color: "var(--text-tertiary)" }}>
-                    Saving...
-                  </span>
-                )}
-                {shareUrl && (
-                  <>
-                    <div className="w-px h-5" style={{ background: "var(--border)" }} />
-                    <button
-                      onClick={handleCopyShareUrl}
-                      className="px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2"
-                      style={{
-                        background: copied ? "var(--accent-green)" : "var(--accent-blue)",
-                        color: "#fff",
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                      {copied ? "Link copied!" : "Share link"}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
-  );
-}
-
-/* ── Response Card (single mode) ─────────────────────────────────────── */
-
-function ResponseCard({ response }: { response: ProviderResponse }) {
-  const meta = ENGINE_META[response.engine];
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  async function handleContinue(e: React.FormEvent) {
-    e.preventDefault();
-    if (!chatInput.trim() || chatLoading) return;
-    const userMsg = chatInput.trim();
-    setChatInput("");
-    const newMessages = [...chatMessages, { role: "user" as const, text: userMsg }];
-    setChatMessages(newMessages);
-    setChatLoading(true);
-    try {
-      const history = [
-        { role: "user" as const, content: response.text.length > 0 ? `[Previous context: I asked a question and you responded with the following]\n\n${response.text}` : "" },
-        ...newMessages.map(m => ({ role: m.role, content: m.text })),
-      ];
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ engine: response.engine, model: response.model, messages: history }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setChatMessages([...newMessages, { role: "assistant", text: data.text }]);
-    } catch {
-      setChatMessages([...newMessages, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
-    } finally {
-      setChatLoading(false);
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    }
-  }
-
-  return (
-    <div className="glass p-6 mb-4">
-      <div className="flex items-center gap-3 mb-4">
-        <EngineLogo engine={response.engine} size={22} />
-        <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
-        <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {response.model}
-        </span>
-        <span className="ml-auto text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {response.latencySeconds}s &middot;{" "}
-          {response.inputTokens + response.outputTokens} tokens
-        </span>
-      </div>
-      <div className="prose-response text-sm leading-relaxed">
-        <ReactMarkdown>{response.text}</ReactMarkdown>
-      </div>
-
-      {/* Continue Discussion */}
-      {!chatOpen ? (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="continue-btn mt-4"
-          style={{ "--engine-color": meta.color } as React.CSSProperties}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Continue discussion with {meta.label}
-        </button>
-      ) : (
-        <div className="chat-continuation mt-4" style={{ borderColor: meta.color }}>
-          {chatMessages.map((msg, i) => (
-            <div key={i} className={`chat-msg ${msg.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}`}>
-              {msg.role === "assistant" && (
-                <span className="chat-msg-avatar"><EngineLogo engine={response.engine} size={18} /></span>
-              )}
-              <div className={`chat-msg-bubble ${msg.role === "user" ? "chat-msg-bubble-user" : "chat-msg-bubble-assistant"}`}>
-                {msg.role === "assistant" ? (
-                  <div className="prose-response text-sm leading-relaxed"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
-                ) : (
-                  <p className="text-sm">{msg.text}</p>
-                )}
-              </div>
-            </div>
-          ))}
-          {chatLoading && (
-            <div className="chat-msg chat-msg-assistant">
-              <span className="chat-msg-avatar"><EngineLogo engine={response.engine} size={18} /></span>
-              <div className="chat-msg-bubble chat-msg-bubble-assistant">
-                <div className="flex gap-1.5 py-1">
-                  <div className="pulse-dot" style={{ background: meta.color }} />
-                  <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.2s" }} />
-                  <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.4s" }} />
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
-          <form onSubmit={handleContinue} className="chat-input-row">
-            <input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder={`Ask ${meta.label} a follow-up...`}
-              className="chat-input"
-              disabled={chatLoading}
-            />
-            <button
-              type="submit"
-              disabled={chatLoading || !chatInput.trim()}
-              className="chat-send-btn"
-              style={{ background: chatLoading || !chatInput.trim() ? "var(--border)" : meta.color }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-          </form>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Bake-off Results ───────────────────────────────────────────────── */
-
-function BakeoffResults({
-  result,
-  expandedEngines,
-  onToggle,
-}: {
-  result: BakeoffResult;
-  expandedEngines: Set<string>;
-  onToggle: (engine: string) => void;
-}) {
-  const arb = result.arbitration;
-  const winnerMeta = ENGINE_META[arb.bestEngine];
-
-  // Per-engine chat continuation state
-  const [chatState, setChatState] = useState<Record<string, {
-    open: boolean;
-    messages: { role: "user" | "assistant"; text: string }[];
-    input: string;
-    loading: boolean;
-  }>>({});
-  const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  function getChatState(eng: string) {
-    return chatState[eng] || { open: false, messages: [], input: "", loading: false };
-  }
-
-  function updateChatState(eng: string, patch: Partial<typeof chatState[string]>) {
-    setChatState(prev => ({ ...prev, [eng]: { ...getChatState(eng), ...patch } }));
-  }
-
-  async function handleContinue(eng: Engine, model: string, originalText: string, e: React.FormEvent) {
-    e.preventDefault();
-    const cs = getChatState(eng);
-    if (!cs.input.trim() || cs.loading) return;
-    const userMsg = cs.input.trim();
-    const newMessages = [...cs.messages, { role: "user" as const, text: userMsg }];
-    updateChatState(eng, { input: "", messages: newMessages, loading: true });
-    try {
-      const history = [
-        { role: "user" as const, content: `[Previous context: I asked a question and you responded with the following]\n\n${originalText}` },
-        ...newMessages.map(m => ({ role: m.role, content: m.text })),
-      ];
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ engine: eng, model, messages: history }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      updateChatState(eng, { messages: [...newMessages, { role: "assistant", text: data.text }], loading: false });
-    } catch {
-      updateChatState(eng, { messages: [...newMessages, { role: "assistant", text: "Sorry, something went wrong. Please try again." }], loading: false });
-    }
-    setTimeout(() => chatEndRefs.current[eng]?.scrollIntoView({ behavior: "smooth" }), 100);
-  }
-
-  function resolveLabel(label: string) {
-    return engineForLabel(label, result.responses);
+  if (locked) {
+    return <UnlockScreen onUnlocked={load} />;
   }
 
   return (
     <>
-      {/* Synthesis first */}
-      {arb.synthesis && (
-        <>
-          <div className="mb-3">
-            <SectionLabel>Synthesised Answer</SectionLabel>
-          </div>
-          <div className="glass p-6 mb-6">
-            <div className="prose-response text-sm leading-relaxed">
-              <ReactMarkdown>{arb.synthesis}</ReactMarkdown>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Bake-Off Winner */}
-      <div className="mt-10 mb-3">
-        <SectionLabel>Bake-Off Winner</SectionLabel>
-      </div>
-      <div className="glass p-6 mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <EngineLogo engine={arb.bestEngine} size={22} />
-          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-            {winnerMeta.label}
-          </span>
-          <span className="text-xs px-2 py-0.5 rounded" style={{ background: "var(--bg-input)", color: "var(--accent-blue)" }}>
-            Best
+      <header className="topbar">
+        <div className="topbar-inner">
+          <span className="wordmark">MetaLLM</span>
+          <span className="faint" style={{ fontSize: 13, marginLeft: "auto" }}>
+            {thoughts.length > 0
+              ? `${thoughts.length} thought${thoughts.length === 1 ? "" : "s"}`
+              : null}
           </span>
         </div>
-        <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          {arb.bestRationale}
-        </p>
-      </div>
+      </header>
 
-      {/* Consensus */}
-      {arb.consensus.length > 0 && (
-        <>
-          <div className="mt-10 mb-3">
-            <SectionLabel>Consensus</SectionLabel>
-          </div>
-          <div className="glass p-6 mb-6">
-            <ul className="space-y-3">
-              {arb.consensus.map((point, i) => (
-                <li key={i} className="flex gap-3 text-sm" style={{ color: "var(--text-secondary)" }}>
-                  <span className="flex-shrink-0 text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>
-                    &bull;
-                  </span>
-                  {point}
-                </li>
+      <main className="shell" style={{ paddingBottom: 96 }}>
+        <div style={{ paddingTop: 28 }}>
+          <Composer onCaptured={load} />
+        </div>
+
+        {thoughts.length === 0 ? (
+          <EmptyState />
+        ) : (
+          groupByDay(thoughts).map((group) => (
+            <section key={group.day}>
+              <h2 className="day-heading">{group.day}</h2>
+              {group.items.map((t) => (
+                <ThreadRow key={t.id} thought={t} />
               ))}
-            </ul>
-          </div>
-        </>
-      )}
-
-      {/* Disagreements — engine logos instead of A/B/C circles */}
-      {arb.disagreements.length > 0 && (
-        <>
-          <div className="mt-10 mb-3">
-            <SectionLabel>Disagreements</SectionLabel>
-          </div>
-          {arb.disagreements.map((d, i) => (
-            <div
-              key={i}
-              className="glass p-6 mb-4"
-            >
-              <h4 className="text-sm font-medium mb-3" style={{ color: "var(--text-primary)" }}>
-                {d.topic}
-              </h4>
-              <div className="space-y-2.5 mb-4">
-                {Object.entries(d.positions).map(([lbl, pos]) => {
-                  const em = resolveLabel(lbl);
-                  return (
-                    <div key={lbl} className="flex gap-3 text-sm">
-                      <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
-                        {em.engine ? <EngineLogo engine={em.engine} size={22} /> : (
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: em.color, color: "#fff" }}>{lbl}</span>
-                        )}
-                      </span>
-                      <span style={{ color: "var(--text-secondary)" }}>{pos}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-sm italic" style={{ color: "var(--text-tertiary)" }}>
-                {d.assessment}
-              </p>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* Individual responses — collapsible, hidden by default */}
-      <div className="mt-10 mb-3">
-        <SectionLabel>Individual Responses</SectionLabel>
-      </div>
-      {result.responses.map((r) => {
-        const meta = ENGINE_META[r.engine];
-        const isOpen = expandedEngines.has(r.engine);
-        const cs = getChatState(r.engine);
-        return (
-          <div key={r.engine} className="glass mb-4 overflow-hidden">
-            <button
-              onClick={() => onToggle(r.engine)}
-              className="accordion-trigger w-full p-5 flex items-center gap-3 text-left"
-              style={{ cursor: "pointer" }}
-            >
-              <EngineLogo engine={r.engine} size={20} />
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{meta.label}</span>
-              <span className="text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
-                {r.model}
-              </span>
-              <span className="ml-auto text-xs hide-mobile" style={{ color: "var(--text-tertiary)" }}>
-                {r.latencySeconds}s &middot; {r.inputTokens + r.outputTokens} tokens
-              </span>
-              <span
-                className="ml-2 text-xs"
-                style={{
-                  color: "var(--text-tertiary)",
-                  transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
-                  transition: "transform 0.15s ease",
-                  display: "inline-block",
-                }}
-              >
-                &#9654;
-              </span>
-            </button>
-            {isOpen && (
-              <div className="px-6 pb-6" style={{ borderTop: "1px solid var(--border)" }}>
-                <div className="prose-response text-sm leading-relaxed pt-4">
-                  <ReactMarkdown>{r.text}</ReactMarkdown>
-                </div>
-
-                {/* Continue Discussion button — only when chat not yet started */}
-                {!cs.open && (
-                  <button
-                    onClick={() => updateChatState(r.engine, { open: true })}
-                    className="continue-btn mt-4"
-                    style={{ "--engine-color": meta.color } as React.CSSProperties}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Continue discussion with {meta.label}
-                  </button>
-                )}
-              </div>
-            )}
-            {/* Chat continuation — renders independently of accordion so responses always have a place */}
-            {cs.open && (
-              <div className="px-6 pb-6" style={!isOpen ? { borderTop: "1px solid var(--border)" } : {}}>
-                <div className="chat-continuation mt-4" style={{ borderColor: meta.color }}>
-                  {cs.messages.map((msg, i) => (
-                    <div key={i} className={`chat-msg ${msg.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}`}>
-                      {msg.role === "assistant" && (
-                        <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
-                      )}
-                      <div className={`chat-msg-bubble ${msg.role === "user" ? "chat-msg-bubble-user" : "chat-msg-bubble-assistant"}`}>
-                        {msg.role === "assistant" ? (
-                          <div className="prose-response text-sm leading-relaxed"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
-                        ) : (
-                          <p className="text-sm">{msg.text}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {cs.loading && (
-                    <div className="chat-msg chat-msg-assistant">
-                      <span className="chat-msg-avatar"><EngineLogo engine={r.engine} size={18} /></span>
-                      <div className="chat-msg-bubble chat-msg-bubble-assistant">
-                        <div className="flex gap-1.5 py-1">
-                          <div className="pulse-dot" style={{ background: meta.color }} />
-                          <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.2s" }} />
-                          <div className="pulse-dot" style={{ background: meta.color, animationDelay: "0.4s" }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={el => { chatEndRefs.current[r.engine] = el; }} />
-                  <form onSubmit={(e) => handleContinue(r.engine, r.model, r.text, e)} className="chat-input-row">
-                    <input
-                      value={cs.input}
-                      onChange={(e) => updateChatState(r.engine, { input: e.target.value })}
-                      placeholder={`Ask ${meta.label} a follow-up...`}
-                      className="chat-input"
-                      disabled={cs.loading}
-                    />
-                    <button
-                      type="submit"
-                      disabled={cs.loading || !cs.input.trim()}
-                      className="chat-send-btn"
-                      style={{ background: cs.loading || !cs.input.trim() ? "var(--border)" : meta.color }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
+            </section>
+          ))
+        )}
+      </main>
     </>
   );
 }
 
-/* ── Section Label ──────────────────────────────────────────────────── */
+/* ── Composer ────────────────────────────────────────────────────────── */
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function Composer({ onCaptured }: { onCaptured: () => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [clarifying, setClarifying] = useState<string | null>(null);
+  const [reply, setReply] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+
+  function autoGrow() {
+    const el = areaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
+  }
+
+  async function submit(clarification?: string) {
+    const body = text.trim();
+    if (!body || busy) return;
+
+    setBusy(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: body, clarification, source: "web" }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? "Couldn't capture that.");
+
+      if (data.status === "needs_clarification") {
+        setClarifying(data.question);
+        return;
+      }
+
+      setText("");
+      setReply("");
+      setClarifying(null);
+      if (areaRef.current) areaRef.current.style.height = "auto";
+      onCaptured();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (clarifying) {
+    return (
+      <div className="composer rise" style={{ padding: "18px 20px 16px" }}>
+        <p className="eyebrow" style={{ marginBottom: 8 }}>
+          One quick thing
+        </p>
+        <p style={{ margin: "0 0 14px", fontSize: 16 }}>{clarifying}</p>
+        <input
+          className="field"
+          value={reply}
+          onChange={(e) => setReply(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && reply.trim()) submit(reply.trim());
+          }}
+          placeholder="Your answer"
+          autoFocus
+        />
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "flex-end",
+            marginTop: 12,
+          }}
+        >
+          <button
+            className="btn btn-ghost"
+            onClick={() => submit()}
+            disabled={busy}
+          >
+            Skip
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => submit(reply.trim())}
+            disabled={busy || !reply.trim()}
+          >
+            {busy ? <span className="spinner" /> : null}
+            Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <h3
-      className="text-xs font-medium tracking-wide"
-      style={{ color: "var(--text-tertiary)", letterSpacing: "0.05em" }}
-    >
-      {children}
-    </h3>
+    <>
+      <div className="composer">
+        <textarea
+          ref={areaRef}
+          value={text}
+          rows={1}
+          placeholder="What's on your mind?"
+          onChange={(e) => {
+            setText(e.target.value);
+            autoGrow();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+          }}
+        />
+        <div className="composer-foot">
+          <span className="faint" style={{ fontSize: 12.5 }}>
+            Answers arrive on their own
+          </span>
+          <button
+            className="btn btn-primary"
+            onClick={() => submit()}
+            disabled={busy || !text.trim()}
+          >
+            {busy ? <span className="spinner" /> : null}
+            Capture
+          </button>
+        </div>
+      </div>
+      {error ? (
+        <p style={{ color: "var(--red)", fontSize: 13.5, marginTop: 10 }}>
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/* ── Rows ────────────────────────────────────────────────────────────── */
+
+function ThreadRow({ thought }: { thought: ThoughtRow }) {
+  const pending = isInFlight(thought.status);
+  const failed = thought.status === "failed";
+
+  return (
+    <Link href={`/t/${thought.id}`} className="thread">
+      <p className="thread-title">
+        {pending ? <span className="pip pip-working" /> : null}
+        {failed ? <span className="pip pip-failed" /> : null}
+        <span>{thought.title ?? thought.raw_text.slice(0, 60)}</span>
+      </p>
+
+      <p className="thread-synopsis">
+        {thought.synopsis ??
+          (pending ? statusLabel(thought.status) : thought.raw_text)}
+      </p>
+
+      <p className="thread-meta">
+        <span>{clockTime(thought.created_at)}</span>
+        <span className="dot-sep">
+          {DEPTH_LABEL[thought.depth] ?? thought.depth}
+        </span>
+        {thought.has_disagreements ? (
+          <span className="dot-sep">Engines disagreed</span>
+        ) : null}
+      </p>
+    </Link>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div style={{ padding: "64px 8px", textAlign: "center" }}>
+      <p className="h2" style={{ marginBottom: 6 }}>
+        Nothing captured yet
+      </p>
+      <p className="muted" style={{ fontSize: 14.5, margin: 0 }}>
+        Type a thought above, or say &ldquo;Hey Siri, ask Meta&rdquo; on your
+        phone.
+      </p>
+    </div>
+  );
+}
+
+/* ── Unlock ──────────────────────────────────────────────────────────── */
+
+function UnlockScreen({ onUnlocked }: { onUnlocked: () => void }) {
+  const [secret, setSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function unlock() {
+    if (!secret.trim() || busy) return;
+    setBusy(true);
+    setError(false);
+
+    const res = await fetch("/api/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: secret.trim() }),
+    });
+
+    setBusy(false);
+
+    if (res.ok) onUnlocked();
+    else setError(true);
+  }
+
+  return (
+    <div className="center-stage">
+      <div className="lock-card rise">
+        <div style={{ color: "var(--text-faint)", marginBottom: 14 }}>
+          <Lock size={22} />
+        </div>
+        <p className="h2" style={{ marginBottom: 20 }}>
+          MetaLLM
+        </p>
+        <input
+          className="field"
+          type="password"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && unlock()}
+          placeholder="Access key"
+          autoFocus
+        />
+        {error ? (
+          <p style={{ color: "var(--red)", fontSize: 13.5, marginTop: 10 }}>
+            That key didn&rsquo;t work.
+          </p>
+        ) : null}
+        <button
+          className="btn btn-primary"
+          style={{ width: "100%", marginTop: 12 }}
+          onClick={unlock}
+          disabled={busy || !secret.trim()}
+        >
+          {busy ? <span className="spinner" /> : null}
+          Unlock
+        </button>
+      </div>
+    </div>
   );
 }

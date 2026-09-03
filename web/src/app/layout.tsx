@@ -1,9 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MetaLLM — Claude vs. Gemini vs. ChatGPT vs. Perplexity",
-  description: "Multi-AI arbitration — query Claude, Gemini, ChatGPT, and Perplexity, then let an arbiter choose the best.",
+  title: "MetaLLM",
+  description:
+    "Capture a question the moment it occurs. Answers find you later.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -13,12 +20,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body>{children}</body>
     </html>
   );

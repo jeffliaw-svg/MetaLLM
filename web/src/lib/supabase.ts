@@ -1,9 +1,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-let _client: SupabaseClient | null = null;
+let _anon: SupabaseClient | null = null;
+let _service: SupabaseClient | null = null;
 
+/**
+ * Anonymous client. Subject to RLS, which denies almost everything.
+ * Only useful for reading rows that have been explicitly shared.
+ */
 export function getSupabase(): SupabaseClient {
-  if (_client) return _client;
+  if (_anon) return _anon;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -14,27 +19,31 @@ export function getSupabase(): SupabaseClient {
     );
   }
 
-  _client = createClient(url, key);
-  return _client;
+  _anon = createClient(url, key);
+  return _anon;
 }
 
 /**
- * SQL to create the searches table in Supabase:
+ * Service-role client. Bypasses RLS entirely — server-side only.
  *
- * CREATE TABLE searches (
- *   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
- *   prompt TEXT NOT NULL,
- *   mode TEXT NOT NULL,
- *   speed TEXT NOT NULL,
- *   length TEXT NOT NULL,
- *   engine TEXT,
- *   arbiter TEXT,
- *   result JSONB NOT NULL,
- *   created_at TIMESTAMPTZ DEFAULT now()
- * );
- *
- * -- Enable public read/insert access (anonymous sharing)
- * ALTER TABLE searches ENABLE ROW LEVEL SECURITY;
- * CREATE POLICY "Anyone can read searches" ON searches FOR SELECT USING (true);
- * CREATE POLICY "Anyone can insert searches" ON searches FOR INSERT WITH CHECK (true);
+ * Never import this into a client component. Every route handler in this app
+ * uses it, because the app is single-user and authorisation happens at the
+ * route boundary via CAPTURE_SECRET or a QStash signature.
  */
+export function getServiceSupabase(): SupabaseClient {
+  if (_service) return _service;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY"
+    );
+  }
+
+  _service = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return _service;
+}
