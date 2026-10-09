@@ -21,6 +21,34 @@ function contextFor(run: Run): string {
   return `Earlier question: ${run.prompt}\n\nAnswer so far:\n${answer.slice(0, 6000)}`;
 }
 
+function Unlock({ onDone }: { onDone: () => void }) {
+  const [code, setCode] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim() || busy) return;
+    setBusy(true);
+    setErr("");
+    const res = await fetch("/api/unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) }).catch(() => null);
+    setBusy(false);
+    if (res?.ok) onDone();
+    else setErr("That code didn't work. Ask whoever shared MetaLLM with you.");
+  }
+
+  return (
+    <form className="card unlock" onSubmit={submit}>
+      <p>Enter the access code to ask questions.</p>
+      <div className="row">
+        <input type="password" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Access code" autoComplete="current-password" autoFocus />
+        <button className="btn primary" disabled={busy || !code.trim()}>{busy ? "Checking…" : "Unlock"}</button>
+      </div>
+      {err && <p className="err">{err}</p>}
+    </form>
+  );
+}
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [settings, setSettings] = useState<Settings>({ auto: true, mode: "bakeoff", speed: "moderate", length: "moderate", engine: "claude", arbiter: "claude" });
@@ -30,7 +58,12 @@ export default function Home() {
   const [share, setShare] = useState<{ id: string; runs: number } | null>(null);
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState("");
+  const [locked, setLocked] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/unlock").then((r) => r.json()).then((d) => setLocked(!d.unlocked)).catch(() => {});
+  }, []);
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setSettings((s) => ({ ...s, [k]: v }));
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
@@ -75,6 +108,7 @@ export default function Home() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: sent, mode, speed, length, engine, arbiter, engines }),
       });
+      if (res.status === 401) setLocked(true);
       if (!res.ok || !res.body) throw new Error((await res.json().catch(() => ({}))).error || "Request failed.");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -111,6 +145,7 @@ export default function Home() {
       body: JSON.stringify({ prompt: thread[0].prompt, mode: thread[0].mode, result: { kind: "thread", status: last.status }, thread }),
     });
     const d = await res.json();
+    if (res.status === 401) setLocked(true);
     if (!res.ok) { flash(d.error || "Couldn't create link."); return null; }
     setShare({ id: d.id, runs: thread.length });
     return `${location.origin}/share/${d.id}`;
@@ -195,13 +230,13 @@ export default function Home() {
         <div className="hero">
           <h1 className="serif">What do you want four AIs to weigh in on?</h1>
           <p>Claude, Gemini, ChatGPT, and Perplexity answer. A blind judge synthesizes and compares.</p>
-          {composer(false)}
-          <div className="examples">{EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => setPrompt(x)}>{x}</button>)}</div>
+          {locked ? <Unlock onDone={() => setLocked(false)} /> : composer(false)}
+          {!locked && <div className="examples">{EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => setPrompt(x)}>{x}</button>)}</div>}
         </div>
       ) : (
         <>
           {thread.map((run, i) => <RunView key={i} run={run} />)}
-          {composer(true)}
+          {locked ? <Unlock onDone={() => setLocked(false)} /> : composer(true)}
           <div ref={bottom} />
         </>
       )}

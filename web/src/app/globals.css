@@ -76,3 +76,10 @@ th{font-weight:500;color:var(--muted);font-size:13px;border-top:0;white-space:no
 .center{text-align:center;color:var(--muted);padding:80px 0}
 @media(max-width:760px){.hero h1{font-size:30px;margin-top:32px}.question{font-size:23px}.engines{grid-template-columns:repeat(2,minmax(0,1fr))!important}.topbar .btn.primary{padding:6px 10px;font-size:13px}.dgrid{display:none}.dcards{display:flex}.verdict{padding:18px}}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px}
+
+.unlock{padding:18px 20px;text-align:left}
+.unlock p{margin:0 0 12px;color:var(--muted)}
+.unlock .row{display:flex;gap:8px}
+.unlock input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);outline:none}
+.unlock input:focus{border-color:var(--accent)}
+.unlock .err{color:var(--bad);margin:10px 0 0;font-size:14px}

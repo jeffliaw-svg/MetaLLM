@@ -1,9 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MetaLLM — four AIs, one blind judge",
   description: "Ask Claude, Gemini, ChatGPT and Perplexity at once, then let a blind judge compare their answers.",
+  appleWebApp: { capable: true, title: "MetaLLM", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAF9F5" },
+    { media: "(prefers-color-scheme: dark)", color: "#1C1B19" },
+  ],
 };
 
 const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(!t){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){}})();`;
