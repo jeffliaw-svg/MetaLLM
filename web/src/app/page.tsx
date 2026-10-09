@@ -166,13 +166,8 @@ export default function Home() {
             {(Object.keys(SPEED_LABEL) as Speed[]).map((s) => <option key={s} value={s}>{SPEED_LABEL[s]}</option>)}</select></label>
           <label>Length<select disabled={settings.auto} value={settings.length} onChange={(e) => set("length", e.target.value as Length)}>
             {(Object.keys(LENGTH_LABEL) as Length[]).map((l) => <option key={l} value={l}>{LENGTH_LABEL[l]}</option>)}</select></label>
-          <label>Who answers<select value={settings.mode === "single" ? settings.engine : "all"} onChange={(e) => {
-            if (e.target.value === "all") set("mode", "bakeoff"); else setSettings((s) => ({ ...s, mode: "single", engine: e.target.value as Engine }));
-          }}>
-            <option value="all">All four engines</option>
-            {ENGINES.map((e) => <option key={e} value={e}>{ENGINE_META[e].label} only</option>)}</select></label>
-          {settings.mode === "bakeoff" && <label>Judge<select value={settings.arbiter} onChange={(e) => set("arbiter", e.target.value as Engine)}>
-            {ENGINES.map((e) => <option key={e} value={e}>{ENGINE_META[e].label}</option>)}</select></label>}
+          <label>Judge<select value={settings.arbiter} onChange={(e) => set("arbiter", e.target.value as Engine)}>
+            {ENGINES.map((e) => <option key={e} value={e}>{ENGINE_META[e].label}</option>)}</select></label>
         </div>
       )}
     </div>
