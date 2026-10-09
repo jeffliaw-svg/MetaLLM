@@ -67,7 +67,7 @@ async function runBakeoff(
     );
   }
 
-  const arbitration = await arbitrate(prompt, responses, arbiterEngine);
+  const outcome = await arbitrate(prompt, responses, arbiterEngine);
 
-  return { kind: "bakeoff", responses, arbitration };
+  return { kind: "bakeoff", responses: outcome.responses, arbitration: outcome.arbitration };
 }

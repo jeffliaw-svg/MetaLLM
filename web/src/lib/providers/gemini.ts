@@ -8,11 +8,9 @@ function getAI(): GoogleGenAI {
   return _ai;
 }
 
-/** Minimum thinking budget for gemini-2.5-pro (thinking can't be disabled). */
-const THINKING_BUDGET = 128;
-/** Higher thinking budget when web search is enabled — the model needs more
- *  reasoning tokens to process grounding results. */
-const THINKING_BUDGET_WITH_SEARCH = 1024;
+/** Gemini 3 models think by default and thinking tokens count against
+ *  maxOutputTokens, so reserve headroom on top of the answer budget. */
+const THINKING_HEADROOM = 4096;
 
 export async function queryGemini(
   prompt: string,
@@ -22,15 +20,10 @@ export async function queryGemini(
 ): Promise<ProviderResponse> {
   const modelName = MODEL_MAP.gemini[speed];
   const preset = LENGTH_PRESETS[length];
-  const isThinkingModel = modelName.includes("2.5");
-
-  const thinkingBudget = webSearch ? THINKING_BUDGET_WITH_SEARCH : THINKING_BUDGET;
   const baseTokens = webSearch
     ? Math.max(preset.maxTokens, 4096)
     : preset.maxTokens;
-  const maxOutputTokens = isThinkingModel
-    ? baseTokens + thinkingBudget
-    : baseTokens;
+  const maxOutputTokens = baseTokens + THINKING_HEADROOM;
 
   const systemInstruction = systemOverride
     ? systemOverride
@@ -47,9 +40,6 @@ export async function queryGemini(
     config: {
       maxOutputTokens,
       systemInstruction,
-      ...(isThinkingModel && {
-        thinkingConfig: { thinkingBudget },
-      }),
       ...(webSearch && { tools: [{ googleSearch: {} }] }),
     },
   });

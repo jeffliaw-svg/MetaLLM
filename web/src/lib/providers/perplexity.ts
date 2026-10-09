@@ -32,7 +32,9 @@ export async function queryPerplexity(
   });
   const latency = (performance.now() - t0) / 1000;
 
-  const text = response.choices[0]?.message?.content ?? "";
+  const text = (response.choices[0]?.message?.content ?? "")
+    .replace(/<think>[\s\S]*?<\/think>/g, "")
+    .trim();
   const citations: string[] = (response as any).citations ?? [];
   const sourcesText = citations.length > 0
     ? "\n\n**Sources:**\n" + citations.map((url: string, i: number) => `- [${i + 1}](${url})`).join("\n")
