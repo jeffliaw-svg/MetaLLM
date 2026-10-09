@@ -23,7 +23,7 @@ export default function SharePage() {
   return (
     <div className="wrap">
       <header className="topbar">
-        <a className="logo" href="/"><i>M</i>MetaLLM</a>
+        <a className="logo" href="/"><i>P</i>PostCogs</a>
         <nav><ThemeToggle /><a className="btn primary" href="/">Ask your own question</a></nav>
       </header>
       {error && <p className="center">{error === "Not found" ? "Search not found." : error}</p>}

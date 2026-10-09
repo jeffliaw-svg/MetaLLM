@@ -34,7 +34,7 @@ function Unlock({ onDone }: { onDone: () => void }) {
     const res = await fetch("/api/unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) onDone();
-    else setErr("That code didn't work. Ask whoever shared MetaLLM with you.");
+    else setErr("That code didn't work. Ask whoever shared PostCogs with you.");
   }
 
   return (
@@ -211,7 +211,7 @@ export default function Home() {
   return (
     <div className="wrap">
       <header className="topbar">
-        <a className="logo" href="/" onClick={(e) => { e.preventDefault(); if (!busy) { setThread([]); setShare(null); } }}><i>M</i>MetaLLM</a>
+        <a className="logo" href="/" onClick={(e) => { e.preventDefault(); if (!busy) { setThread([]); setShare(null); } }}><i>P</i>PostCogs</a>
         <nav>
           <ThemeToggle />
           {done && <button className="btn" onClick={() => setMenu(!menu)}>↗ Share</button>}

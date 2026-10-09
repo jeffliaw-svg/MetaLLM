@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "MetaLLM",
-    short_name: "MetaLLM",
+    name: "PostCogs",
+    short_name: "PostCogs",
     description: "Four AIs answer. A blind judge synthesizes and compares.",
     start_url: "/",
     display: "standalone",
