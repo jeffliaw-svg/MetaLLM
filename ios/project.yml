@@ -1,0 +1,43 @@
+name: PostCogs
+options:
+  bundleIdPrefix: com.postcogs
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: LD574DHGV9
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+targets:
+  PostCogs:
+    type: application
+    platform: iOS
+    sources: [PostCogs]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.postcogs.app
+        PRODUCT_NAME: PostCogs
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: PostCogs/Info.plist
+    info:
+      path: PostCogs/Info.plist
+      properties:
+        CFBundleDisplayName: PostCogs
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        LSApplicationQueriesSchemes: [whatsapp, sms, mailto, tel]
+        UILaunchScreen:
+          UIColorName: Background
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false

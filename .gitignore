@@ -10,3 +10,15 @@ node_modules/
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# Xcode / iOS
+ios/build/
+DerivedData/
+*.xcarchive
+*.ipa
+*.dSYM.zip
+xcuserdata/
+*.xcuserstate
+*.p8
+*.p12
+*.mobileprovision
