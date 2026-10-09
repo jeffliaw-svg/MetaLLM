@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MetaLLM — four AIs, one blind judge",
+  title: "PostCogs — four AIs, one blind judge",
   description: "Ask Claude, Gemini, ChatGPT and Perplexity at once, then let a blind judge compare their answers.",
-  appleWebApp: { capable: true, title: "MetaLLM", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "PostCogs", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
