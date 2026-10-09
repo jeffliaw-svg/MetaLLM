@@ -3,11 +3,11 @@ import { saveSearch } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
-    const { prompt, mode, speed, length, engine, arbiter, result } = await request.json();
+    const { prompt, mode, speed, length, engine, arbiter, result, thread } = await request.json();
 
-    if (!prompt || !result) {
+    if (!prompt || (!result && !Array.isArray(thread))) {
       return NextResponse.json(
-        { error: "prompt and result are required." },
+        { error: "prompt and result or thread are required." },
         { status: 400 }
       );
     }
@@ -19,7 +19,8 @@ export async function POST(request: Request) {
       length,
       engine: engine ?? null,
       arbiter: arbiter ?? null,
-      result,
+      result: result ?? null,
+      ...(Array.isArray(thread) ? { thread } : {}),
     });
 
     return NextResponse.json({ id });
