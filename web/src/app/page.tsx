@@ -199,7 +199,7 @@ export default function Home() {
       {thread.length === 0 ? (
         <div className="hero">
           <h1 className="serif">What do you want four AIs to weigh in on?</h1>
-          <p>Claude, Gemini, ChatGPT and Perplexity answer in parallel. A blind judge compares them.</p>
+          <p>Claude, Gemini, ChatGPT, and Perplexity answer. A blind judge synthesizes and compares.</p>
           {composer(false)}
           <div className="examples">{EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => setPrompt(x)}>{x}</button>)}</div>
         </div>
