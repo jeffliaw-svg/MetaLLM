@@ -17,14 +17,14 @@ export const MODEL_MAP: Record<Engine, Record<Speed, string>> = {
     research: "claude-opus-4-6",
   },
   gemini: {
-    fast: "gemini-2.0-flash",
-    moderate: "gemini-2.5-pro",
-    research: "gemini-2.5-pro",
+    fast: "gemini-3.1-flash-lite",
+    moderate: "gemini-3.8-flash",
+    research: "gemini-3.1-pro-preview",
   },
   chatgpt: {
-    fast: "gpt-4o-mini",
-    moderate: "gpt-4o",
-    research: "o3",
+    fast: "gpt-5-mini",
+    moderate: "gpt-5.1",
+    research: "gpt-5.2",
   },
   perplexity: {
     fast: "sonar",

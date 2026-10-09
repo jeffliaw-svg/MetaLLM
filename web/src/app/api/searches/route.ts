@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { saveSearch } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-
-    const { prompt, mode, speed, length, engine, arbiter, result } = body;
+    const { prompt, mode, speed, length, engine, arbiter, result } = await request.json();
 
     if (!prompt || !result) {
       return NextResponse.json(
@@ -14,35 +12,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
+    const id = await saveSearch({
+      prompt,
+      mode,
+      speed,
+      length,
+      engine: engine ?? null,
+      arbiter: arbiter ?? null,
+      result,
+    });
 
-    const { data, error } = await supabase
-      .from("searches")
-      .insert({
-        prompt,
-        mode,
-        speed,
-        length,
-        engine: engine ?? null,
-        arbiter: arbiter ?? null,
-        result,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return NextResponse.json(
-        { error: "Failed to save search." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ id: data.id });
+    return NextResponse.json({ id });
   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : "An unexpected error occurred.";
     console.error("Save search error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save search." }, { status: 500 });
   }
 }

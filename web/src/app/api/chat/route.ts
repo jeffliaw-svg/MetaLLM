@@ -74,8 +74,6 @@ async function chatClaude(model: string, messages: ChatMessage[]): Promise<strin
 }
 
 async function chatGemini(model: string, messages: ChatMessage[]): Promise<string> {
-  const isThinkingModel = model.includes("2.5");
-  const thinkingBudget = isThinkingModel ? 1024 : undefined;
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
@@ -84,11 +82,8 @@ async function chatGemini(model: string, messages: ChatMessage[]): Promise<strin
     model,
     contents,
     config: {
-      maxOutputTokens: isThinkingModel ? 4096 + (thinkingBudget ?? 0) : 4096,
+      maxOutputTokens: 8192,
       systemInstruction: SEARCH_INSTRUCTION.replace("a web search tool", "Google Search").trim(),
-      ...(isThinkingModel && {
-        thinkingConfig: { thinkingBudget: thinkingBudget! },
-      }),
       tools: [{ googleSearch: {} }],
     },
   });
@@ -105,7 +100,7 @@ async function chatChatGPT(model: string, messages: ChatMessage[]): Promise<stri
     instructions: SEARCH_INSTRUCTION.trim(),
     input,
     tools: [{ type: "web_search_preview" }],
-    max_output_tokens: 4096,
+    max_output_tokens: 12288,
   });
   return result.output_text ?? "";
 }
@@ -119,7 +114,9 @@ async function chatPerplexity(model: string, messages: ChatMessage[]): Promise<s
     ],
     max_tokens: 4096,
   });
-  const text = response.choices[0]?.message?.content ?? "";
+  const text = (response.choices[0]?.message?.content ?? "")
+    .replace(/<think>[\s\S]*?<\/think>/g, "")
+    .trim();
   const citations: string[] = (response as any).citations ?? [];
   const sourcesText = citations.length > 0
     ? "\n\n**Sources:**\n" + citations.map((url: string, i: number) => `- [${i + 1}](${url})`).join("\n")

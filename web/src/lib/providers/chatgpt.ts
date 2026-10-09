@@ -8,6 +8,8 @@ function getClient(): OpenAI {
   return _client;
 }
 
+const REASONING_HEADROOM = 8192;
+
 export async function queryChatGPT(
   prompt: string,
   speed: Speed,
@@ -17,11 +19,9 @@ export async function queryChatGPT(
   const model = MODEL_MAP.chatgpt[speed];
   const preset = LENGTH_PRESETS[length];
 
-  // When web search is enabled the model needs headroom for internal search
-  // tool calls + the final answer.  Floor at 4096 (same approach as Claude).
-  const maxOutputTokens = webSearch
-    ? Math.max(preset.maxTokens, 4096)
-    : preset.maxTokens;
+  // GPT-5 models spend output tokens on reasoning and search tool calls
+  // before the answer, so reserve headroom on top of the length preset.
+  const maxOutputTokens = preset.maxTokens + REASONING_HEADROOM;
 
   const instructions = systemOverride
     ? systemOverride
@@ -40,6 +40,7 @@ export async function queryChatGPT(
       tools: [{ type: "web_search_preview" as const }],
     }),
     max_output_tokens: maxOutputTokens,
+    ...(speed === "fast" && { reasoning: { effort: "low" as const } }),
   });
   const latency = (performance.now() - t0) / 1000;
 

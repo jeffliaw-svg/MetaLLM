@@ -169,6 +169,7 @@ export default function Home() {
   const [engine, setEngine] = useState<Engine>("claude");
   const [arbiter, setArbiter] = useState<Engine>("claude");
   const [prompt, setPrompt] = useState("");
+  const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +196,7 @@ export default function Home() {
     if (!prompt.trim() || loading) return;
 
     setLoading(true);
+    setSubmittedPrompt(prompt.trim());
     setResult(null);
     setError(null);
     setShareUrl(null);
@@ -256,7 +258,7 @@ export default function Home() {
 
   function buildCopyText(): string {
     if (!result) return "";
-    const lines: string[] = [`# LLM Showdown Analysis`, "", `**Prompt:** ${prompt}`, ""];
+    const lines: string[] = [`# LLM Showdown Analysis`, "", `**Prompt:** ${submittedPrompt}`, ""];
 
     if (result.kind === "single") {
       const meta = ENGINE_META[result.response.engine];
@@ -497,9 +499,10 @@ export default function Home() {
           <>
             <div className="stagger">
               {result.kind === "single" ? (
-                <ResponseCard response={result.response} />
+                <ResponseCard prompt={submittedPrompt} response={result.response} />
               ) : (
                 <BakeoffResults
+                  prompt={submittedPrompt}
                   result={result}
                   expandedEngines={expandedEngines}
                   onToggle={toggleEngine}
@@ -562,7 +565,7 @@ export default function Home() {
 
 /* ── Response Card (single mode) ─────────────────────────────────────── */
 
-function ResponseCard({ response }: { response: ProviderResponse }) {
+function ResponseCard({ prompt, response }: { prompt: string; response: ProviderResponse }) {
   const meta = ENGINE_META[response.engine];
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
@@ -580,7 +583,8 @@ function ResponseCard({ response }: { response: ProviderResponse }) {
     setChatLoading(true);
     try {
       const history = [
-        { role: "user" as const, content: response.text.length > 0 ? `[Previous context: I asked a question and you responded with the following]\n\n${response.text}` : "" },
+        { role: "user" as const, content: prompt },
+        { role: "assistant" as const, content: response.text },
         ...newMessages.map(m => ({ role: m.role, content: m.text })),
       ];
       const res = await fetch("/api/chat", {
@@ -681,10 +685,12 @@ function ResponseCard({ response }: { response: ProviderResponse }) {
 /* ── Bake-off Results ───────────────────────────────────────────────── */
 
 function BakeoffResults({
+  prompt,
   result,
   expandedEngines,
   onToggle,
 }: {
+  prompt: string;
   result: BakeoffResult;
   expandedEngines: Set<string>;
   onToggle: (engine: string) => void;
@@ -718,7 +724,8 @@ function BakeoffResults({
     updateChatState(eng, { input: "", messages: newMessages, loading: true });
     try {
       const history = [
-        { role: "user" as const, content: `[Previous context: I asked a question and you responded with the following]\n\n${originalText}` },
+        { role: "user" as const, content: prompt },
+        { role: "assistant" as const, content: originalText },
         ...newMessages.map(m => ({ role: m.role, content: m.text })),
       ];
       const res = await fetch("/api/chat", {
